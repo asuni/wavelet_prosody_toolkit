@@ -36,10 +36,6 @@ from prosody_tools import cwt_utils, loma, misc
 
 import numpy as np
 
-# Plotting
-import matplotlib.pyplot as p
-p.switch_backend("Qt5Agg")
-
 try:
     import pylab
 except Exception as ex:
@@ -47,10 +43,6 @@ except Exception as ex:
 
 
 LOG_LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
-
-N_SCALES = 20
-SCALE_DIST = 0.5
-SCALE_FACT = 200
 
 ###############################################################################
 # Functions
@@ -204,11 +196,11 @@ if __name__ == '__main__':
         parser.add_argument("-L", "--label", help="Alternative label filename")
 
         # Scales options
-        parser.add_argument("-n", "--nb-scales", default=N_SCALES, type=int,
+        parser.add_argument("-n", "--nb-scales", default=20, type=int,
                             help="The number of scales for the cwt")
-        parser.add_argument("-d", "--scale-dist", default=SCALE_DIST, type=float,
+        parser.add_argument("-d", "--scale-dist", default=0.5, type=float,
                             help="The distance between scales")
-        parser.add_argument("-f", "--scale-factor", default=SCALE_FACT, type=int,
+        parser.add_argument("-f", "--scale-factor", default=200, type=int,
                             help="Scaling factor")
 
         # Add arguments
