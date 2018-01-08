@@ -1,0 +1,9 @@
+pycwt
+wavio
+matplotlib
+numpy
+scipy
+pyqt5
+soundfile
+tgt
+

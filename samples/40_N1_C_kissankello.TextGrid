@@ -1,0 +1,122 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 2.602675736961451 
+tiers? <exists> 
+size = 5 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "sanat" 
+        xmin = 0 
+        xmax = 2.602675736961451 
+        intervals: size = 5 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.3813532988377878 
+            text = "" 
+        intervals [2]:
+            xmin = 0.3813532988377878 
+            xmax = 1.373576792765878 
+            text = "S0" 
+        intervals [3]:
+            xmin = 1.373576792765878 
+            xmax = 1.9027481016021124 
+            text = "S1" 
+        intervals [4]:
+            xmin = 1.9027481016021124 
+            xmax = 2.2477643338446045 
+            text = "S2" 
+        intervals [5]:
+            xmin = 2.2477643338446045 
+            xmax = 2.602675736961451 
+            text = "" 
+    item [2]:
+        class = "IntervalTier" 
+        name = "tavut" 
+        xmin = 0 
+        xmax = 2.602675736961451 
+        intervals: size = 6 
+        intervals [1]:
+            xmin = 0 
+            xmax = 1.373576792765878 
+            text = "" 
+        intervals [2]:
+            xmin = 1.373576792765878 
+            xmax = 1.6765392363669516 
+            text = "T1" 
+        intervals [3]:
+            xmin = 1.6765392363669516 
+            xmax = 1.9027481016021124 
+            text = "T2" 
+        intervals [4]:
+            xmin = 1.9027481016021124 
+            xmax = 2.087091927631417 
+            text = "T3" 
+        intervals [5]:
+            xmin = 2.087091927631417 
+            xmax = 2.2477643338446045 
+            text = "T4" 
+        intervals [6]:
+            xmin = 2.2477643338446045 
+            xmax = 2.602675736961451 
+            text = "" 
+    item [3]:
+        class = "IntervalTier" 
+        name = "vokaalit" 
+        xmin = 0 
+        xmax = 2.602675736961451 
+        intervals: size = 9 
+        intervals [1]:
+            xmin = 0 
+            xmax = 1.4793689320369707 
+            text = "" 
+        intervals [2]:
+            xmin = 1.4793689320369707 
+            xmax = 1.571320010157871 
+            text = "V1" 
+        intervals [3]:
+            xmin = 1.571320010157871 
+            xmax = 1.7530452937140502 
+            text = "" 
+        intervals [4]:
+            xmin = 1.7530452937140502 
+            xmax = 1.8182176368032497 
+            text = "V2" 
+        intervals [5]:
+            xmin = 1.8182176368032497 
+            xmax = 1.9419381861997345 
+            text = "" 
+        intervals [6]:
+            xmin = 1.9419381861997345 
+            xmax = 2.0138858704032554 
+            text = "V3" 
+        intervals [7]:
+            xmin = 2.0138858704032554 
+            xmax = 2.159362246891967 
+            text = "" 
+        intervals [8]:
+            xmin = 2.159362246891967 
+            xmax = 2.2477643338446045 
+            text = "V4" 
+        intervals [9]:
+            xmin = 2.2477643338446045 
+            xmax = 2.602675736961451 
+            text = "" 
+    item [4]:
+        class = "IntervalTier" 
+        name = "narina" 
+        xmin = 0 
+        xmax = 2.602675736961451 
+        intervals: size = 1 
+        intervals [1]:
+            xmin = 0 
+            xmax = 2.602675736961451 
+            text = "" 
+    item [5]:
+        class = "TextTier" 
+        name = "f0" 
+        xmin = 0 
+        xmax = 2.602675736961451 
+        points: size = 0 
