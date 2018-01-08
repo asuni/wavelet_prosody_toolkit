@@ -22,7 +22,7 @@ import argparse
 # Logging
 import time
 import logging
-
+logging.basicConfig(level=logging.WARN)
 
 # extraction and preprocessing of prosodic signals
 from prosody_tools import f0_processing, energy_processing, duration_processing, smooth_and_interp
@@ -45,7 +45,7 @@ except Exception as ex:
     logging.info("pylab is not available, so plotting is not available")
 
 
-LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
+LOG_LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
 N_SCALES = 20
 SCALE_DIST = 0.5
@@ -206,11 +206,12 @@ if __name__ == '__main__':
         args = parser.parse_args()
 
         # Verbose level => logging level
-        log_level = args.verbosity
-        if (args.verbosity > len(LEVEL)):
+        log_level_idx = args.verbosity
+        if (args.verbosity > len(LOG_LEVEL)):
             logging.warning("verbosity level is too high, I'm gonna assume you're taking the highes ")
-            log_level = len(LEVEL) - 1
-            logging.basicConfig(level=LEVEL[log_level])
+            log_level_idx = len(LOG_LEVEL) - 1
+            print(LOG_LEVEL[log_level_idx])
+        logging.getLogger().setLevel(LOG_LEVEL[log_level_idx])
 
         # Debug time
         start_time = time.time()
