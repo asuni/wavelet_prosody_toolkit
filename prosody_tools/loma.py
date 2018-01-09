@@ -182,16 +182,9 @@ def get_loma(wavelet_matrix, scales, min_scale, max_scale):
                 peaks.append(maxi[1]+parents[p])
 
                 #append child to correct loma
-                loma[root[maxi[0]]].append([maxi[0],maxi[1]+parents[p]])
+                loma[root[maxi[0]]].append([maxi[0],maxi[1]+parents[p], i, p])
                 root[p] = root[maxi[0]]
 
-                # #plot for debugging
-                # if fig:
-                #     y = i-1
-                #     size = maxi[1]+parents[p]
-                #     fig.plot([maxi[0], p], [(i-2), y],
-                #              linewidth=2+size, color=color,
-                #              alpha=0.45, solid_capstyle='round')
 
     sorted_loma = []
     for k in sorted(loma.keys()):
@@ -200,3 +193,14 @@ def get_loma(wavelet_matrix, scales, min_scale, max_scale):
 
     logger.debug(simplify(sorted_loma))
     return sorted_loma
+
+
+def plot_loma(loma, fig, color='black'):
+    for elt in loma:
+        for child in elt:
+            i = child[2]
+            y = i-1
+            size = child[1]
+            fig.plot([child[0], child[3]], [(i-2), y],
+                     linewidth=2+size, color=color,
+                     alpha=0.45, solid_capstyle='round')

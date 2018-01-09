@@ -80,6 +80,9 @@ def extract_speech_rate(labels):
     return rate
 
 def extract_params(input_file, labels):
+    """Extract prosodic params from wav file and corresponding labels.
+    """
+
     # Extract acoustic part from input wav file.
     (energy_smooth, pitch) = extract_signal_prosodic_feature(input_file)
 
@@ -96,7 +99,22 @@ def extract_params(input_file, labels):
     return (params, pitch, energy_smooth, rate)
 
 
-def plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominences):
+def label_prosody(input_file, scales, cwt, labels):
+
+    # get scale corresponding to word length
+    level_scale = misc.get_best_scale(np.real(cwt), len(labels))
+
+
+    pos_loma = loma.get_loma(np.real(cwt),scales, level_scale-4, level_scale+4)
+    neg_loma = loma.get_loma(-np.real(cwt),scales, level_scale-4, level_scale+4)
+
+    prominences = loma.get_prominences(pos_loma, labels)
+    boundaries = loma.get_boundaries(prominences, neg_loma, labels)
+
+    return (prominences, boundaries, pos_loma, neg_loma)
+
+
+def plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominences, pos_loma, neg_loma):
     f, axarr = pylab.subplots(2, sharex=True)
     axarr[0].set_title("Acoustic Features")
     shift = 0
@@ -116,24 +134,11 @@ def plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominence
 
     axarr[1].set_title("Continuous Wavelet Transform")
     axarr[1].contourf(cwt, 100)
+    loma.plot_loma(pos_loma, color='black', fig=axarr[1])
+    loma.plot_loma(neg_loma, color='white', fig=axarr[1])
 
     lab.plot_labels(labels, ypos=1., prominences= np.array(prominences)[:,1],  fig=axarr[1])
     pylab.show()
-
-
-def label_prosody(input_file, scales, cwt, labels):
-
-    # get scale corresponding to word length
-    level_scale = misc.get_best_scale(np.real(cwt), len(labels))
-
-
-    pos_loma = loma.get_loma(np.real(cwt),scales, level_scale-4, level_scale+4)
-    neg_loma = loma.get_loma(-np.real(cwt),scales, level_scale-4, level_scale+4)
-
-    prominences = loma.get_prominences(pos_loma, labels)
-    boundaries = loma.get_boundaries(prominences, neg_loma, labels)
-
-    return (prominences, boundaries)
 
 ###############################################################################
 # Main function
@@ -167,7 +172,7 @@ def main():
     scales *= args.scale_factor
 
     # Labelling prominences and boundarys
-    (prominences, boundaries) = label_prosody(args.input_file, scales, cwt, labels)
+    (prominences, boundaries, pos_loma, neg_loma) = label_prosody(args.input_file, scales, cwt, labels)
 
     print("========================================================")
     print("label\tprominence\tboundary")
@@ -176,7 +181,7 @@ def main():
 
     if args.plot:
         warnings.simplefilter("ignore", np.ComplexWarning) # Plotting can't deal with complex, but we don't care
-        plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominences)
+        plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominences, pos_loma, neg_loma)
 
 ###############################################################################
 #  Envelopping
