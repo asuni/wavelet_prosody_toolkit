@@ -2,16 +2,30 @@
 
 from setuptools import setup, find_packages
 
-setup(name='prosody-wavelet-toolkit',
+REQUIREMENTS = [
+    # Math
+    "pycwt", "matplotlib", "numpy", "scipy",
+
+    # Audio/speech
+    "soundfile", "tgt", "pyreaper",  "wavio",
+
+    # Rendering
+    "pyqt5", "Sphinx"
+]
+
+setup(name='wavelet-prosody-toolkit',
       version='0.1a0',
       description='Prosody wavelet analysis toolkit',
       author='Antti Suni',
       author_email='antti.suni@helsinki.fi',
-      url='https://www.python.org/sigs/distutils-sig/',
       packages=find_packages(),
-      install_requires=[
-          "pycwt", "matplotlib", "numpy", "scipy",
-          "soundfile", "tgt", "pyreaper",  "wavio",
-          "pyqt5",
-      ],
-     )
+      install_requires=REQUIREMENTS,
+      entry_points={
+        'console_scripts': [
+            'prosody_labeller = wavelet_prosody_toolkit.prosody_labeller:main',
+        ],
+        'gui_scripts': [
+            'wavelet_gui = wavelet_prosody_toolkit.wavelet_gui:main'
+        ]
+      }
+)

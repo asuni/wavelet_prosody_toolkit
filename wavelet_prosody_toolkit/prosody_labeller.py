@@ -26,13 +26,13 @@ import logging
 logging.basicConfig(level=logging.WARN)
 
 # extraction and preprocessing of prosodic signals
-from prosody_tools import f0_processing, energy_processing, duration_processing, smooth_and_interp
+from wavelet_prosody_toolkit.prosody_tools import f0_processing, energy_processing, duration_processing, smooth_and_interp
 
 # labels
-from prosody_tools import lab
+from wavelet_prosody_toolkit.prosody_tools import lab
 
 # wavelet
-from prosody_tools import cwt_utils, loma, misc
+from wavelet_prosody_toolkit.prosody_tools import cwt_utils, loma, misc
 
 import numpy as np
 
@@ -143,7 +143,7 @@ def plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominence
 ###############################################################################
 # Main function
 ###############################################################################
-def main():
+def run():
     """Main entry function
     """
     global args
@@ -186,7 +186,9 @@ def main():
 ###############################################################################
 #  Envelopping
 ###############################################################################
-if __name__ == '__main__':
+def main():
+    global args
+
     try:
         parser = argparse.ArgumentParser(description="")
 
@@ -227,7 +229,7 @@ if __name__ == '__main__':
         logging.info("start time = " + time.asctime())
 
         # Running main function <=> run application
-        main()
+        run()
 
         # Debug time
         logging.info("end time = " + time.asctime())
@@ -246,4 +248,7 @@ if __name__ == '__main__':
         traceback.print_exc(file=sys.stderr)
         sys.exit(-1)
 
+
+if __name__ == '__main__':
+    main()
 # prosody_labeller_command_line.py ends here
