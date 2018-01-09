@@ -1,40 +1,45 @@
 import numpy as np
+from operator import itemgetter
 
+# Logging
+import logging
+logger = logging.getLogger(__name__)
 
-def save_analyses(fname, labels, prominences, boundaries, frame_rate=200):
-
+def save_analyses(fname, labels, prominences, boundaries, frame_rate=200, with_header=False):
+    """Save analysis into a csv formatted this way
+    """
     import os.path
+
+    # Fill Header
+    if with_header:
+        header = ("Basename", "start", "end", "label", "prominence", "boundary")
+
+    # Generate content
     lines = []
-    print("saving", fname)
     for i in range(0, len(labels)):
-        lines.append(("%s" %(os.path.splitext(os.path.basename(fname))[0] ), 
+        lines.append(("%s" %(os.path.splitext(os.path.basename(fname))[0] ),
                      "%.3f" %(float(labels[i][0]/frame_rate)),
                       "%.3f" %(float(labels[i][1]/frame_rate)),
                       labels[i][2],
                       #"%.3f" %(float(prominences[i][0]/frame_rate)),
                       "%.3f" %(prominences[i][1]),
                      "%.3f" %(boundaries[i][1])))
-                     
 
+    logger.debug("Saving %s with following content:" % fname)
+    if with_header:
+        logger.debug(header)
+    logger.debug(lines)
 
     import codecs
-    prom_f = codecs.open(fname, "w", "utf-8")
-        #prom_f  = open(fname, 'w')
-    
-    #writer=csv.writer(prom_f, delimiter='\t')
-    #writer.writerows(lines)
-    for i in range(0,len(lines)):
-      
-        prom_f.write(u'\t'.join(lines[i])+u"\n")
+    with codecs.open(fname, "w", "utf-8") as prom_f:
+        if with_header:
+            prom_f.write(u"\t".join(header) + u"\n")
 
-    prom_f.close()
-
-    #except:
-    #    pass
+        for i in range(0,len(lines)):
+            prom_f.write(u'\t'.join(lines[i])+u"\n")
 
 def simplify(loma):
-    from operator import itemgetter
-    
+
     simplified = []
     for l in loma:
         # align loma to it's position in the middle of the line
@@ -44,7 +49,7 @@ def simplify(loma):
     return simplified
 
 def get_prominences(pos_loma, labels, rate=1):
-    from operator import itemgetter
+
     max_word_loma = []
     loma = simplify(pos_loma)
     for (st, end, unit) in labels:
@@ -58,16 +63,15 @@ def get_prominences(pos_loma, labels, rate=1):
             max_word_loma.append(sorted(word_loma, key=itemgetter(1))[-1])
         else:
             max_word_loma.append([st+(end-st)/2.0, 0.])
-            
+
     return max_word_loma
-    
-    
+
+
 
 
 
 # get strongest lines of minimum amplitude between adjacent words' max lines
 def get_boundaries(max_word_loma,boundary_loma, labels):
-    from operator import itemgetter 
     boundary_loma = simplify(boundary_loma)
     max_boundary_loma = []
     st = 0
@@ -88,7 +92,7 @@ def get_boundaries(max_word_loma,boundary_loma, labels):
 
     # final boundary is not estimated
     max_boundary_loma.append((labels[-1][1],1))
-    return max_boundary_loma         
+    return max_boundary_loma
 
 
 
@@ -127,48 +131,37 @@ def _get_parent(child_index, parent_diff, parent_indices):
 
 # note: change this so that one level is done in one chunk, not one parent.
 
-def get_loma(wavelet_matrix,scales, min_scale,max_scale, color='black',labels=[],fig=None):
-    from operator import itemgetter
-    #psize = 0.0
-    #if fig:
-        
-    #    from matplotlib import patches
-    #    from matplotlib import pyplot as pylab
+def get_loma(wavelet_matrix, scales, min_scale, max_scale):
+    """Get the Line Of Maximum Amplitude (loma)
+    """
     psize = 100.0
     min_peak = -10000.0 # minimum peak amplitude to consider. NOTE:this has no meaning unless scales normalized
-    max_dist = 10 # how far in time to look for parent peaks. NOTE: frame rate and scale dependent
-    
+    max_dist = 10 # how far in time to look for parent peaks. NOTE: frame rate and scale dependent, FIXME: how dependent?
+
     # get peaks from the first scale
     (peaks,indices) = get_peaks(wavelet_matrix[min_scale],min_peak)
-
-    
 
     loma=dict()
     root=dict()
     for i in range(0,len(peaks)):
-
         loma[indices[i]]=[]
+
         # keep track of roots of each loma
         root[indices[i]] = indices[i]
 
-        if fig:
-            pass
-
-            #fig.scatter(indices[i],min_scale, s = peaks[i]*psize,color="black")
-
-
     for i in range(min_scale+1, max_scale):
         max_dist = np.sqrt(scales[i])*4
+
 	# find peaks in the parent scale
         (p_peaks,p_indices) = get_peaks(wavelet_matrix[i], min_peak)
 
         parents = dict(zip(p_indices, p_peaks))
 
-        # find a parent for each child peak 
+        # find a parent for each child peak
         children = dict()
         for p in p_indices:
             children[p] = []
-	
+
         parent_diff = np.diff(wavelet_matrix[i],1)
         for j in range(0,len(indices)):
             parent =_get_parent(indices[j], parent_diff, p_indices)
@@ -182,32 +175,28 @@ def get_loma(wavelet_matrix,scales, min_scale,max_scale, color='black',labels=[]
         for p in children:
 
             if len(children[p]) > 0:
-		# max[0]: index
-		# max[1]: peak height
-                max = sorted(children[p], key=itemgetter(1))[-1]
+		# maxi[0]: index
+		# maxi[1]: peak height
+                maxi = sorted(children[p], key=itemgetter(1))[-1]
                 indices.append(p)
-                peaks.append(max[1]+parents[p])
+                peaks.append(maxi[1]+parents[p])
 
-                #append child to correct loma 
-                loma[root[max[0]]].append([max[0],max[1]+parents[p]])
-                root[p] = root[max[0]]
-                
-                #plot for debugging
-                if fig:
-                    y = i-1
-                    size = max[1]+parents[p]
-                    #y = wavelet_matrix[i][p]+i#max[0]]+(i-1)
-                    fig.plot([max[0], p], [(i-2), y], linewidth=2+size,color=color,alpha=0.45,solid_capstyle='round')
-                    #fig.scatter(p,i, s = size*psize,alpha=0.5,color="black")
+                #append child to correct loma
+                loma[root[maxi[0]]].append([maxi[0],maxi[1]+parents[p]])
+                root[p] = root[maxi[0]]
+
+                # #plot for debugging
+                # if fig:
+                #     y = i-1
+                #     size = maxi[1]+parents[p]
+                #     fig.plot([maxi[0], p], [(i-2), y],
+                #              linewidth=2+size, color=color,
+                #              alpha=0.45, solid_capstyle='round')
 
     sorted_loma = []
     for k in sorted(loma.keys()):
         if  len(loma[k]) > 0:
             sorted_loma.append(loma[k])
 
-    #print(simplify(sorted_loma))
+    logger.debug(simplify(sorted_loma))
     return sorted_loma
-
-
-
-    

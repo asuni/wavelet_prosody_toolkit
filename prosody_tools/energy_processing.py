@@ -2,6 +2,10 @@ import numpy as np
 from . import smooth_and_interp, misc
 
 
+# Logging
+import logging
+logger = logging.getLogger(__name__)
+
 #def extract_energy(waveform, min_freq=200, max_freq=3000, method='mag', target_rate=200):
 
 def extract_energy(waveform, fs=16000, min_freq=200, max_freq=3000, method='mag', target_rate=200):
@@ -10,7 +14,7 @@ def extract_energy(waveform, fs=16000, min_freq=200, max_freq=3000, method='mag'
         basestring
     except NameError:
         basestring = str
-        
+
     # accept both wav-files and waveform arrays
     if isinstance(waveform, basestring):
 
@@ -28,30 +32,30 @@ def extract_energy(waveform, fs=16000, min_freq=200, max_freq=3000, method='mag'
     # hilbert is sometimes prohibitively slow, should pad to next power of two
     if method == 'hilbert':
         energy=abs(scipy.signal.hilbert(lp_waveform))
-    
+
     elif method == "true_envelope":
-        # window should be about one pitch period, ~ 5 ms 
-        win = 0.005 *fs 
+        # window should be about one pitch period, ~ 5 ms
+        win = 0.005 *fs
         energy = smooth_and_interp.peak_smooth(abs(lp_waveform), 200,win)
 
     elif method == "mag":
         energy=np.sqrt(lp_waveform**2)
-    print(fs, target_rate, fs/target_rate)
+    logger.debug("fs = %d, target_rate = %d, fs/target_rate = %f" % (fs, target_rate, fs/target_rate))
     #scipy complains about too large decimation if done in single step
     energy = scipy.signal.resample_poly(energy, 1., int(round(fs/target_rate)))
-    print(len(energy), len(energy)/target_rate)
+    logger.debug("len(energy) = %d, len(energy)/target_rate = %f" % (len(energy), len(energy)/target_rate))
     return energy
 
 
 def process(energy, voicing=[]):
-    
+
     energy=smooth_and_interp.peak_smooth(energy, 100, 5, voicing=voicing)
     return energy
 
 
 if __name__ == "__main__":
 
-    
+
     import sys
     import pylab
     hilbert_env = extract_energy(sys.argv[1]) #, min_freq=500, max_freq=4000, method='hilbert')
@@ -66,7 +70,7 @@ if __name__ == "__main__":
 
     pylab.legend()
     pylab.show()
-    
+
     import f0_processing
     f0 = f0_processing.extract_f0(sys.argv[1])
     f0, true_env= misc.match_length(f0,true_env)

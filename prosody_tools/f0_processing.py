@@ -2,6 +2,9 @@
 
 import numpy as np
 
+# Logging
+import logging
+logger = logging.getLogger(__name__)
 
 from . import smooth_and_interp, misc
 
@@ -11,8 +14,7 @@ def duration(labels, rate=200,linear=True):
 
     for i in range(len(labels)):
         (st,en, unit) = labels[i]
-        #print labels[i]
-        
+
         st*=rate
         en*=rate
         dur[i] = en-st
@@ -31,8 +33,8 @@ def rolling_window(a, window):
     strides = a.strides + (a.strides[-1],)
     return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
 
-        
-        
+
+
 def _cut_boundary_vals(params, num_vals):
     cutted = np.array(params)
     for i in range(num_vals, len(params)-num_vals):
@@ -50,12 +52,12 @@ def _cut_boundary_vals(params, num_vals):
 def _interpolate_zeros(params, method='pchip', min_val = 0):
 
 
-    voiced = np.array(params, float)        
+    voiced = np.array(params, float)
     for i in range(0, len(voiced)):
         if voiced[i] == min_val:
             voiced[i] = np.nan
     last_voiced=len(params)-np.nanargmax(params[::-1] >0)
-    
+
     if np.isnan(voiced[-1]):
         voiced[-1] = np.nanmin(voiced)
     if np.isnan(voiced[0]):
@@ -69,7 +71,7 @@ def _interpolate_zeros(params, method='pchip', min_val = 0):
         # return voiced parts intact
         smoothed = interp(indices)
         for i in range(0, len(smoothed)):
-            if not np.isnan(voiced[i]) :                    
+            if not np.isnan(voiced[i]) :
                 smoothed[i] = params[i]
         return smoothed
     elif method =='pchip':
@@ -79,7 +81,7 @@ def _interpolate_zeros(params, method='pchip', min_val = 0):
     return interp(indices)
 
 def _smooth(params, win, type="HAMMING"):
-    
+
     """
     gaussian type smoothing, convolution with hamming window
     """
@@ -91,18 +93,18 @@ def _smooth(params, win, type="HAMMING"):
 
     s = np.r_[params[win-1:0:-1],params,params[-1:-win:-1]]
 
-    
+
     if type=="HAMMING":
         w = np.hamming(win)
         #third = int(win/3)
         #w[:third] = 0
     else:
         w = np.ones(win)
-        
-        
+
+
     y = np.convolve(w/w.sum(),s,mode='valid')
     return y[int(win/2):-int(win/2)]
-    
+
 def _peak_smooth(params, max_iter, win,min_win=2,voicing=[]):
 
     TRACE = False
@@ -130,17 +132,17 @@ def _peak_smooth(params, max_iter, win,min_win=2,voicing=[]):
             smooth = _smooth(smooth,int(win+0.5),type='rectangle')
 
         win = win_reduce[i]
-    
+
     if TRACE:
         pylab.plot(smooth,'red',linewidth=2)
         input()
 
- 
+
     return smooth
 
-    
+
 def _remove_outliers(lf0, trace=False):
-   
+
 
     if np.nanmean(lf0[lf0>0])>10:
         raise("logF0 expected")
@@ -153,24 +155,24 @@ def _remove_outliers(lf0, trace=False):
     interp = smooth_and_interp.interpolate_zeros(fixed,'linear')
     fixed[abs(interp-boundary_cut)>0.1] = 0
     interp = smooth_and_interp.interpolate_zeros(fixed, 'linear')
-    
+
     # iterative outlier removal
     # 1. compare current contour estimate to a smoothed contour and remove deviates larger than threshold
     # 2. smooth current estimate with shorter window, thighten threshold
     # 3. goto 1.
-    
+
     # In practice, first handles large scale octave jump type errors,
     # finally small scale 'errors' like consonant perturbation effects and
     # other irregularities in voicing boundaries
     #
     # if this appears to remove too many correct values, increase thresholds
     num_iter = 30
-    max_win_len = 100 
+    max_win_len = 100
     min_win_len = 10 #20
     max_threshold = 3. #threshold with broad window
 
     min_threshold = 0.5 #threshold with shorted window
-    
+
     if trace:
         import matplotlib
         import pylab
@@ -178,7 +180,7 @@ def _remove_outliers(lf0, trace=False):
         pylab.figure()
         pylab.title("outlier removal")
 
-    
+
     _std = np.std(interp)
     # do not tie fixing to liveliness of the original
     _std = 0.3
@@ -210,7 +212,7 @@ def _remove_outliers(lf0, trace=False):
             pylab.show()
 
         interp = smooth_and_interp.interpolate_zeros(fixed,'linear')
-   
+
     if trace:
         raw_input("press any key to continue")
 
@@ -228,7 +230,7 @@ def _interpolate(f0, method="true_envelope"):
 
     elif method == 'true_envelope':
         interp = smooth_and_interp.interpolate_zeros(f0)
-       
+
         _std = np.std(interp)
         _min = np.min(interp)
         low_limit = smooth_and_interp.smooth(interp, 200)-1.5*_std
@@ -249,15 +251,14 @@ def _interpolate(f0, method="true_envelope"):
 def reaper(in_wav_file, waveform, fs, f0_min, f0_max):
     if 1==1:
         import pyreaper
-       
+
         #if len(waveform == 0):
         (fs, waveform) = misc.read_wav(in_wav_file)
-       
-        #print(pyreaper.reaper(waveform, fs, f0_min, f0_max))
+
         pm_times, pm,f0_times, f0, corr = pyreaper.reaper(waveform, fs, f0_min, f0_max)
-        
+
     else:
-        print("error")
+        print("error") # FIXME SLM: ????
         # use external REAPER pitch extraction binary if pyreaper not found
         import os
         _curr_dir = os.path.dirname(os.path.realpath(__file__))
@@ -267,12 +268,12 @@ def reaper(in_wav_file, waveform, fs, f0_min, f0_max):
         f0 = np.loadtxt(out_est_file, skiprows=7, usecols=[2])
         f0[f0<0] = 0.0
     return f0
-    
+
 def extract_f0(filename = "", waveform=[], fs=16000, f0_min = 0, f0_max = 0):
 
     #first determine f0 without limits, then use mean and std of the first estimate
-    #to limit search range.  
-    
+    #to limit search range.
+
     if f0_min==0 or f0_max == 0:
         f0 = reaper(filename, waveform, fs, 30, 550)
         #import pylab
@@ -283,12 +284,12 @@ def extract_f0(filename = "", waveform=[], fs=16000, f0_min = 0, f0_max = 0):
         std_f0 = np.std(f0[f0>0])
         f0_min = max((mean_f0 - 3*std_f0,40.0))
         f0_max = mean_f0 + 6*std_f0
-        print(f0_min, f0_max)
+        logger.debug("f0_min = %f, f0_max = %f" % (f0_min, f0_max))
 
     f0 = reaper(filename, waveform, fs,f0_min, f0_max)
     return f0
-    
-        
+
+
 def process(f0, fix_outliers=True, interpolate=True, do_trace=False):
 
     lf0 = np.array(f0)
@@ -306,16 +307,16 @@ def process(f0, fix_outliers=True, interpolate=True, do_trace=False):
         return np.exp(lf0)
     else:
         return lf0
-    
+
 # this is temporary: assumes 5ms frame shift,
 # assumes format to be either one f0 value per line
 # or praat matrix format
 
 def read_f0(filename):
     import os.path
-    for ext in [".f0", ".F0"]:                                                                                                           
+    for ext in [".f0", ".F0"]:
         f0_f = os.path.splitext(filename)[0]+ext
-        
+
         if os.path.exists(f0_f):
             print("reading F0 file", f0_f)
             try:
@@ -348,7 +349,7 @@ if __name__ == "__main__":
     except:
         print("no f0 file found, using reaper")
     import soundfile as wav
-    
+
     (x, fs) = wav.read(sys.argv[1]+".wav")
     if type(x[0]) in[np.float16, np.float32, np.float64]:
         print(type(x[0]))
@@ -360,10 +361,10 @@ if __name__ == "__main__":
     import os
     os.system("play "+sys.argv[1]+".wav")
     pm_times, pm, f0_times, f0_reaper, corr = pyreaper.reaper(x, fs, 50, 450)
-    
-    
 
-   
+
+
+
     f0_adaptive = extract_f0(sys.argv[1]+".wav")
 
     #pylab.plot(f0_reaper, label="reaper")
@@ -373,5 +374,5 @@ if __name__ == "__main__":
     pylab.plot(process(f0_adaptive, fix_outliers=True, do_trace=False), label="reaper_adapt_fixed", linewidth=2)
     pylab.legend()
     pylab.show()
-    
+
     raw_input()
