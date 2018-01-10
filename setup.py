@@ -40,6 +40,7 @@ setup(
     entry_points={
         'console_scripts': [
             'prosody_labeller = wavelet_prosody_toolkit.prosody_labeller:main',
+            'cwt_analysis_synthesis = wavelet_prosody_toolkit.cwt_analysis_synthesis:main',
         ],
         'gui_scripts': [
             'wavelet_gui = wavelet_prosody_toolkit.wavelet_gui:main'

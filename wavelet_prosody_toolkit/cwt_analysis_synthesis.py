@@ -3,13 +3,9 @@
 """
 AUTHOR
 
-     <slemaguer@coli.uni-saarland.de>
-
 DESCRIPTION
 
 LICENSE
-    This script is in the public domain, free from copyrights or restrictions.
-    Created: 10 January 2018
 """
 
 import sys
