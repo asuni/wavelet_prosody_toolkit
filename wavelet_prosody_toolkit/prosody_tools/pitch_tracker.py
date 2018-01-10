@@ -36,13 +36,13 @@ def simple_pitch(pic, min_hz=50, max_hz=450,thresh=50.0, DEBUG=False):
     pitch = np.zeros(pic.shape[0]) #pic.shape[0])
 
     #pic_smooth = pic
-    pic_smooth = pic*scipy.ndimage.gaussian_filter(pic, [2,5])    
+    pic_smooth = pic*scipy.ndimage.gaussian_filter(pic, [2,5])
     if DEBUG:
         #pylab.imshow(pic[:, 0:max_hz].T, interpolation='nearest', origin='lower',aspect='auto')
         pylab.imshow(np.log(pic_smooth[:, min_hz:max_hz].T), interpolation='nearest', origin='lower',aspect='auto')
         pylab.show()
-        pylab.figure() 
-       
+        pylab.figure()
+
     # tendency to octave jump upward; attenuate harmonics
     #attenuate = np.sqrt(np.linspace(5,.1, pic.shape[1]))
     #pic_smooth*=attenuate
@@ -119,7 +119,7 @@ def simple_pitch(pic, min_hz=50, max_hz=450,thresh=50.0, DEBUG=False):
 def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thresh=50., DEBUG=False, target_rate=200):
     if DEBUG:
         import pylab
-    # read wav file and downsample to 4000Hz 
+    # read wav file and downsample to 4000Hz
     #fs, params = wavfile.read(utt_wav)
     #import siglib.wavio
     (fs, wav) = misc.read_wav(utt_wav)
@@ -127,31 +127,31 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
     params = wav #xwav.data[:,0]
 
 
-    # slider scale 0 -> 100 
+    # slider scale 0 -> 100
     # the threshold is empirically set, depends on number of bins, normalization, smoothing etc..
     voicing_thresh=(voicing_thresh-50.0) / 100.0+0.2
     acorr_weight /=100.
     #voicing_thresh=(voicing_thresh*1000000.)
-    
+
 
     #params =  filter.butter_bandpass_filter(params, int(min_hz*0.5), int(2.5*max_hz), fs, order=5)
     #params =  filter.butter_bandpass_filter(params, 30, 1000, fs, order=4)
 
     sample_rate = 2000.0
     params = scipy.signal.resample_poly(params, 1., int(round(fs/sample_rate)))
-    #params = misc.normalize(params)
+    #params = misc.normalize_std(params)
     #params = misc.resample(params, int(len(params)/(fs/sample_rate)))
     print("downsampled")
     # sometimes the final byte sample messes the analysis or what is the reason
     params = params[:len(params)-1]
-    
+
     # setup wavelet
     #dt = 0.2 #4./sample_rate
     s0 = 2./sample_rate
     dj = 0.25 # five scales per octave
     J= 60  # five octaves
 
-   
+
     # frequency resolution, can be coarse for our purposes
     # equalize the number of bins a bit between males and females by max pitch
     #steps_in_hertz = 400.0 / max_hz
@@ -173,7 +173,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
     mags = np.array(scipy.signal.decimate(np.real(wavelet_matrix), DEC, zero_phase=True))
     freqs = np.array(mags)
 
-   
+
 
     for i in range(0, wavelet_matrix.shape[0]):
 
@@ -187,7 +187,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
         freq = np.diff(phase) / (2.0*np.pi) * sample_rate
         #freq = np.clip(freq,0, int(sample_rate/2.0)-1)
 
-        
+
         mag = abs(h)
 
         freq = scipy.signal.decimate(freq,DEC, zero_phase=True)
@@ -199,7 +199,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
         #freq[(freq)>(np.nanmean(freq)+np.nanstd(freq))] = 0
         #mag[freq==0] = 0
         #pylab.plot(freq)
-        
+
         #pylab.show()
         # some problem with lengths, temporary fix
         end_point=np.min([len(mags[i]), len(freq), len(mag)])
@@ -210,7 +210,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
 
 
     print("inst freq done")
-    
+
     # normalize magnitudes
     mags = (mags-mags.min())/mags.ptp()
 
@@ -225,17 +225,17 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
 
 
 
-    # map harmonics down 
-        
+    # map harmonics down
+
     print ("harmonics..")
-  
+
     #thresh =0.025
     #thresh =0.02
     #tolerance = 3
     # smooth spectrogram a bit
     pic= scipy.ndimage.filters.gaussian_filter(pic,[2,2])
     if DEBUG:
-        
+
         pylab.imshow(pic[:, 0:max_hz].T, interpolation='nearest', origin='lower',aspect='auto')
         #pylab.ion()
         pylab.figure()
@@ -247,9 +247,9 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
     for i in range(0, pic.shape[0]): # frame
         acorr1 = np.correlate(pic[i,:length], pic[i,:length], mode='same') #[length-1:]
         pic[i, :int(length/2.)] =  (1.-acorr_weight)*pic[i,:int(length/2.)] + acorr_weight*acorr1[int(len(acorr1)/2.):]
-        
+
     print("done..")
-    
+
 
     if DEBUG:
         pylab.imshow(pic[:, 0:max_hz].T, interpolation='nearest', origin='lower',aspect='auto')

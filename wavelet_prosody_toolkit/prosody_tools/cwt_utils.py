@@ -5,7 +5,6 @@ from numpy import array,concatenate, sqrt, pad, mean, std, real, nan, zeros, nan
 import pycwt as cwt
 
 
-
 def _unpad(matrix, num):
     unpadded = matrix[:,num:len(matrix[0])-num]
     return unpadded
@@ -15,8 +14,8 @@ def _padded_cwt(params, dt, dj, s0, J,mother, padding_len):
     #padded = concatenate([params,params,params])
     padded = pad(params, padding_len, mode='edge') #edge
     wavelet_matrix, scales, freqs, coi, fft, fftfreqs = cwt.cwt(padded, dt, dj, s0, J,mother)
-    wavelet_matrix = _unpad(wavelet_matrix, padding_len) 
-    #wavelet_matrix = _unpad(wavelet_matrix, len(params)) 
+    wavelet_matrix = _unpad(wavelet_matrix, padding_len)
+    #wavelet_matrix = _unpad(wavelet_matrix, len(params))
 
     return (wavelet_matrix, scales, freqs, coi, fft, fftfreqs)
 def _zero_outside_coi(wavelet_matrix,scales):
@@ -35,18 +34,18 @@ def _scale_for_reconstruction(wavelet_matrix,scales, dj, dt,mother="mexican_hat"
 
     if mother=="morlet":
         from numpy import pi
-        
+
         cc = 1.83
         #periods 5 and 6 are correct, 3,4 approximate
         if period == 3:
             cc = 1.74
         if period == 4:
-            cc = 1.1 
+            cc = 1.1
         elif period==5:
             cc=0.9484
         elif period==6:
             cc == 0.7784
-        
+
 
         c = dj / (cc * pi**(-0.25))
         #for i in range(0, len(scales)):
@@ -67,17 +66,17 @@ def combine_scales(wavelet_matrix, slices):
     return array(combined_scales)
 
 def cwt_analysis(params, mother_name="mexican_hat",num_scales=12, first_scale = None, scale_distance=1.0, apply_coi=True,period=5, frame_rate = 200):
-    
-    
+
+
     # setup wavelet transform
     dt = 1. /float(frame_rate)  # frame length
     dj = scale_distance  # distance between scales in octaves
     if first_scale == None:
-        first_scale = dt # first scale, here frame length 
+        first_scale = dt # first scale, here frame length
     J =  num_scales #  number of scales
-    
+
     mother = cwt.MexicanHat()
- 
+
     if str.lower(mother_name) == "morlet":
         mother = cwt.Morlet(period)
     elif str.lower(mother_name) == "paul":

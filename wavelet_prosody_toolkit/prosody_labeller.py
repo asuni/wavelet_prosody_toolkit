@@ -44,12 +44,18 @@ except Exception as ex:
 
 LOG_LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
+
 ###############################################################################
 # Functions
 ###############################################################################
-
 def extract_signal_prosodic_feature(input_file):
     """Extract energy (smoothed) and pitch from an input wav file.
+
+    Parameters
+    ----------
+    input_file: string
+        Filename of the input wav file
+
     """
     # read waveform
     orig_sr, sig = misc.read_wav(input_file)
@@ -65,11 +71,17 @@ def extract_signal_prosodic_feature(input_file):
 
     return (energy_smooth, pitch)
 
-def extract_speech_rate(labels):
-    """Extract speech rate for a give list of labels. A label is a list of 3 elements [start, end, description]
-    """
 
-    # extract speech rate (from signal)
+def extract_speech_rate(labels):
+    """Extract speech rate for a give list of labels.
+
+    Parameters
+    ----------
+    labels: list of tuple (float, float, string)
+        list of labels which are lists of 3 elements [start, end, description]
+
+    """
+     # extract speech rate (from signal)
     try:
         rate = duration_processing.get_duration_signal([labels]) #, labels['segments']])
     except:
@@ -79,11 +91,19 @@ def extract_speech_rate(labels):
 
     return rate
 
+
 def extract_params(input_file, labels):
     """Extract prosodic params from wav file and corresponding labels.
-    """
 
-    # Extract acoustic part from input wav file.
+    Parameters
+    ----------
+    input_file: string
+        Filename of the input wav file
+    labels: list of tuple (float, float, string)
+        list of labels which are lists of 3 elements [start, end, description]
+
+    """
+     # Extract acoustic part from input wav file.
     (energy_smooth, pitch) = extract_signal_prosodic_feature(input_file)
 
     # Extract speech rate from labels
@@ -140,6 +160,7 @@ def plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominence
     lab.plot_labels(labels, ypos=1., prominences= np.array(prominences)[:,1],  fig=axarr[1])
     pylab.show()
 
+
 ###############################################################################
 # Main function
 ###############################################################################
@@ -147,7 +168,6 @@ def run():
     """Main entry function
     """
     global args
-
 
     # Extract labels
     if args.label:
@@ -183,14 +203,17 @@ def run():
         warnings.simplefilter("ignore", np.ComplexWarning) # Plotting can't deal with complex, but we don't care
         plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominences, pos_loma, neg_loma)
 
+
 ###############################################################################
 #  Envelopping
 ###############################################################################
 def main():
+    """Entry point
+    """
     global args
 
     try:
-        parser = argparse.ArgumentParser(description="")
+        parser = argparse.ArgumentParser(description="Prosody events labeller tool based on wavelet transformation")
 
         # General options
         parser.add_argument("-v", "--verbosity", action="count", default=0,
@@ -212,6 +235,7 @@ def main():
 
         # Add arguments
         parser.add_argument("input_file", help="input wave file to analyze (a label file with the same basename should be available)")
+        parser.add_argument("output_file", help="Output file which contains the events in a csv format")
 
         # Parsing arguments
         args = parser.parse_args()
@@ -251,4 +275,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
 # prosody_labeller_command_line.py ends here
