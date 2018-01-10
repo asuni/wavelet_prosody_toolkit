@@ -732,9 +732,10 @@ class SigWindow(QtWidgets.QDialog):
             pos_loma_end_scale = np.min([n_scales, pos_loma_end_scale])
             neg_loma_end_scale = np.min([n_scales, neg_loma_end_scale])
 
-            pos_loma = loma.get_loma(np.real(self.cwt),self.scales,pos_loma_start_scale,pos_loma_end_scale,fig=self.ax[-1],color="black") #self.ax[2])
-
-            neg_loma = loma.get_loma(-np.real(self.cwt),self.scales,neg_loma_start_scale,neg_loma_end_scale,fig=self.ax[-1],color="white") #self.ax[2])
+            pos_loma = loma.get_loma(np.real(self.cwt),self.scales,pos_loma_start_scale,pos_loma_end_scale) #,fig=self.ax[-1],color="black") #self.ax[2])
+            loma.plot_loma(pos_loma, self.ax[-1], color="black")
+            neg_loma = loma.get_loma(-np.real(self.cwt),self.scales,neg_loma_start_scale,neg_loma_end_scale) #,fig=self.ax[-1],color="white") #self.ax[2])
+            loma.plot_loma(neg_loma, self.ax[-1], color="white")
 
 
             if labels:
