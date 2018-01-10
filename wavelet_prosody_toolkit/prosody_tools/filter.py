@@ -25,8 +25,10 @@ def butter_bandpass(lowcut, highcut, fs, order=5):
 
     Returns
     -------
-    Tuple
-    	Numerator (`b`) and denominator (`a`) polynomials of the IIR filter
+    b: arraylike
+    	Numerator polynomial of the IIR filter
+    a: arraylike
+    	Denominator polynomial of the IIR filter
     """
     nyq = 0.5 * fs
     low = lowcut / nyq
@@ -34,6 +36,8 @@ def butter_bandpass(lowcut, highcut, fs, order=5):
         highcut = nyq*0.95
     high = highcut / nyq
     b, a = butter(order, [low, high], btype='band')
+
+    print(type(b))
     return b, a
 
 
@@ -44,7 +48,7 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
 
     Parameters
     ----------
-    data: array_like
+    data: arraylike
         An N-dimensional input array.
     lowcut: int
         The lowcut filtering value.
@@ -55,6 +59,10 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
     order: int
         The order of the butter filter.
 
+    Returns
+    -------
+    arraylike
+    	An N-dimensional filtered array
     """
     b, a = butter_bandpass(lowcut, highcut, fs, order=order)
     y = lfilter(b, a, data)
