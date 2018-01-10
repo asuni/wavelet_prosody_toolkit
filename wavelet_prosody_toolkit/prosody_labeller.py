@@ -111,16 +111,27 @@ def extract_params(input_file, labels):
 
     # combine feats
     (pitch, energy_smooth, rate) = misc.match_length([pitch, energy_smooth, rate])
-    params = misc.normalize(pitch)+ \
-             misc.normalize(energy_smooth)+ \
-             misc.normalize(rate)
-    params = misc.normalize(params)
+    params = misc.normalize_std(pitch)+ \
+             misc.normalize_std(energy_smooth)+ \
+             misc.normalize_std(rate)
+    params = misc.normalize_std(params)
 
     return (params, pitch, energy_smooth, rate)
 
 
-def label_prosody(input_file, scales, cwt, labels):
+def label_prosody(scales, cwt, labels):
+    """Label prosody event based on wavelet transform
 
+    Parameters
+    ----------
+    scales: vector of float (?)
+        The wavelet scales
+    cwt: matrix of float (?)
+        The wavelet coefficients
+    labels: list of tuple (float, float, string)
+        List of labels which are lists of 3 elements [start, end, description]
+
+    """
     # get scale corresponding to word length
     level_scale = misc.get_best_scale(np.real(cwt), len(labels))
 
@@ -135,19 +146,46 @@ def label_prosody(input_file, scales, cwt, labels):
 
 
 def plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominences, pos_loma, neg_loma):
+    """Plot all the elements
+
+    Parameters
+    ----------
+    labels: list of tuple (float, float, string)
+        List of labels which are lists of 3 elements [start, end, description]
+    rate: type
+        description
+    energy_smooth: type
+        description
+    pitch: type
+        description
+    params: type
+        description
+    cwt: type
+        description
+    boundaries: type
+        description
+    prominences: type
+        description
+    pos_loma: type
+        description
+    neg_loma: type
+        description
+
+
+    """
     f, axarr = pylab.subplots(2, sharex=True)
     axarr[0].set_title("Acoustic Features")
     shift = 0
     axarr[0].plot(params, label="combined")
 
     shift = 4
-    axarr[0].plot(misc.normalize(rate)+shift, label="rate (shift=%d)" % shift)
+    axarr[0].plot(misc.normalize_std(rate)+shift, label="rate (shift=%d)" % shift)
 
     shift = 7
-    axarr[0].plot(misc.normalize(energy_smooth)+shift, label="energy(shift=%d)" % shift)
+    axarr[0].plot(misc.normalize_std(energy_smooth)+shift, label="energy(shift=%d)" % shift)
 
     shift = 10
-    axarr[0].plot(misc.normalize(pitch)+shift, label="f0 (shift=%d)" % shift)
+    axarr[0].plot(misc.normalize_std(pitch)+shift, label="f0 (shift=%d)" % shift)
     axarr[0].set_xlim(0,len(params))
     l = axarr[0].legend(fancybox=True)
     l.get_frame().set_alpha(0.75)
@@ -192,7 +230,7 @@ def run():
     scales *= args.scale_factor
 
     # Labelling prominences and boundarys
-    (prominences, boundaries, pos_loma, neg_loma) = label_prosody(args.input_file, scales, cwt, labels)
+    (prominences, boundaries, pos_loma, neg_loma) = label_prosody(scales, cwt, labels)
 
     print("========================================================")
     print("label\tprominence\tboundary")

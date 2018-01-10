@@ -109,10 +109,10 @@ def get_duration_signal(tiers =[], weights = [], sil_symbols=SIL_SYMBOLS, rate=1
     durations = []
     lengths  = []
     for t in tiers:
-        durations.append(misc.normalize(duration(t, rate=rate, sil_symbols=sil_symbols)))
+        durations.append(misc.normalize_std(duration(t, rate=rate, sil_symbols=sil_symbols)))
     durations = misc.match_length(durations)
     sum_durations =np.zeros(len(durations[0]))
-                            
+
     if len(weights)!=len(tiers):
         weights = np.ones(len(tiers))
     for i in range(len(durations)):

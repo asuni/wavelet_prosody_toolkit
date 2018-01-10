@@ -64,9 +64,9 @@ if __name__ == "__main__":
     true_env = extract_energy(sys.argv[1], method='true_envelope')
     mag = extract_energy(sys.argv[1], method='mag')
 
-    pylab.plot(misc.normalize2(hilbert_env), label="hilbert envelope")
-    pylab.plot(misc.normalize2(true_env), label="true envelope")
-    pylab.plot(misc.normalize2(mag), label="magnitude" )
+    pylab.plot(misc.normalize_minmax(hilbert_env), label="hilbert envelope")
+    pylab.plot(misc.normalize_minmax(true_env), label="true envelope")
+    pylab.plot(misc.normalize_minmax(mag), label="magnitude" )
 
     pylab.legend()
     pylab.show()
@@ -75,8 +75,8 @@ if __name__ == "__main__":
     f0 = f0_processing.extract_f0(sys.argv[1])
     f0, true_env= misc.match_length(f0,true_env)
     #true_env[f0<= 0] = 0
-    pylab.plot(misc.normalize2(true_env))
-    pylab.plot(misc.normalize2(f0_processing.process(f0)))
+    pylab.plot(misc.normalize_minmax(true_env))
+    pylab.plot(misc.normalize_minmax(f0_processing.process(f0)))
     pylab.show()
     pylab.ion()
     pylab.plot(hilbert_env)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     """
     pylab.clf()
     import scipy.signal
-    pylab.plot(misc.normalize2(hilbert_env))
-    pylab.plot(process(misc.normalize2(scipy.signal.medfilt(hilbert_env,5))))
+    pylab.plot(misc.normalize_minmax(hilbert_env))
+    pylab.plot(process(misc.normalize_minmax(scipy.signal.medfilt(hilbert_env,5))))
     pylab.show()
     raw_input()

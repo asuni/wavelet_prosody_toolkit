@@ -55,10 +55,10 @@ def simple_pitch(pic, min_hz=50, max_hz=450,thresh=50.0, DEBUG=False):
         #pylab.show()
     # get slot with maximum energy / frame
     for i in range(0, pic_smooth.shape[0]):
-        pic_smooth[i]=misc.normalize(pic_smooth[i])
+        pic_smooth[i]=misc.normalize_std(pic_smooth[i])
         pitch[i] = _get_f0(pic_smooth[i], min_hz, max_hz, thresh)
-    
-        
+
+
     if DEBUG:
         pylab.plot(pitch-min_hz,color="black")
         pylab.show()
