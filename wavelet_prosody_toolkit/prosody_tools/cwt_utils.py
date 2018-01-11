@@ -1,41 +1,122 @@
-from numpy import array,concatenate, sqrt, pad, mean, std, real, nan, zeros, nanmean, nanstd
+"""Module which provides continuous wavelet transform (cwt) analysis/synthesis routines
+"""
 
-#from pycwt import cwt
+
+from numpy import array,concatenate, sqrt, pad, mean, std, real, nan, zeros, nanmean, nanstd, pi
 
 import pycwt as cwt
 
-
+###########################################################################################
+# Private routines
+###########################################################################################
 def _unpad(matrix, num):
+    """Private function to unpad axis 1 of a matrix
+
+    Parameters
+    ----------
+    matrix: ndarray
+        a NDarray
+    num: int
+       the unpadding size
+
+    Returns
+    -------
+    ndarray
+    	the unpadded matrix
+    """
     unpadded = matrix[:,num:len(matrix[0])-num]
     return unpadded
 
 
-def _padded_cwt(params, dt, dj, s0, J,mother, padding_len):
+def _padded_cwt(params, dt, dj, s0, J, mother, padding_len):
+    """Private function to compute a wavelet transform on padded data
+
+    Parameters
+    ----------
+    params: arraylike
+        The prosodic parameters.
+    dt: ?
+        ?
+    dj: ?
+        ?
+    s0: ?
+        ?
+    J: ?
+        ?
+    mother: ?
+        The mother wavelet.
+    padding_len: int
+        The padding length
+
+    Returns
+    -------
+    wavelet_matrix: ndarray
+    	The wavelet data resulting from the analysis
+    scales: arraylike
+    	The scale indices corresponding to the wavelet data
+    freqs: ?
+    	?
+    coi: array
+    	The cone of influence values
+    fft: ?
+    	?
+    fftfreqs: ?
+    	?
+    """
     #padded = concatenate([params,params,params])
     padded = pad(params, padding_len, mode='edge') #edge
-    wavelet_matrix, scales, freqs, coi, fft, fftfreqs = cwt.cwt(padded, dt, dj, s0, J,mother)
+    wavelet_matrix, scales, freqs, coi, fft, fftfreqs = cwt.cwt(padded, dt, dj, s0, J, mother)
     wavelet_matrix = _unpad(wavelet_matrix, padding_len)
     #wavelet_matrix = _unpad(wavelet_matrix, len(params))
 
     return (wavelet_matrix, scales, freqs, coi, fft, fftfreqs)
+
+
 def _zero_outside_coi(wavelet_matrix,scales):
+    """Private function to set each elements outside of the Cone Of Influence (coi) to 0.
+
+    Parameters
+    ----------
+    wavelet_matrix: type
+        description
+    scales: type
+        description
+
+    """
     for i in range(0,wavelet_matrix.shape[0]):
         coi =int((scales[i]))
         wavelet_matrix[i,0:coi] = 0.
         wavelet_matrix[i,-coi:] = 0.
     return wavelet_matrix
 
+
 def _scale_for_reconstruction(wavelet_matrix,scales, dj, dt,mother="mexican_hat",period=3):
+    """ ?
+
+    Parameters
+    ----------
+    wavelet_matrix: ndarray
+    	The wavelet data resulting from the analysis
+    scales: arraylike
+    	The scale indices corresponding to the wavelet data
+    dj: ?
+        ?
+    dt: ?
+        ?
+    mother: ?
+        ?
+    period: ?
+        ?
+
+    """
     scaled = array(wavelet_matrix)
 
     # mexican Hat
     c = dj / (3.541 * 0.867)
 
-
     if mother=="morlet":
-        from numpy import pi
-
         cc = 1.83
+
         #periods 5 and 6 are correct, 3,4 approximate
         if period == 3:
             cc = 1.74
@@ -46,7 +127,6 @@ def _scale_for_reconstruction(wavelet_matrix,scales, dj, dt,mother="mexican_hat"
         elif period==6:
             cc == 0.7784
 
-
         c = dj / (cc * pi**(-0.25))
         #for i in range(0, len(scales)):
         #    scaled[i]*= 1./(i+1)  # c*sqrt(dt)/sqrt(scales[i])
@@ -55,19 +135,64 @@ def _scale_for_reconstruction(wavelet_matrix,scales, dj, dt,mother="mexican_hat"
         scaled[i]*= c*sqrt(dt)/sqrt(scales[i])
         # substracting the mean should not be necessary?
         scaled[i]-=mean(scaled[i])
+
     return scaled
 
 
+###########################################################################################
+# Public routines
+###########################################################################################
 def combine_scales(wavelet_matrix, slices):
+    """Combine the scales of given slices
+
+    Parameters
+    ----------
+    wavelet_matrix: ndarray
+        The wavelet data matrix.
+    slices: ndarray
+        The slices
+
+    Returns
+    -------
+    array
+    	The combined scales
+    """
     combined_scales = []
 
     for i in range(0, len(slices)):
         combined_scales.append(sum(wavelet_matrix[slices[i][0]:slices[i][1]]))
     return array(combined_scales)
 
-def cwt_analysis(params, mother_name="mexican_hat",num_scales=12, first_scale = None, scale_distance=1.0, apply_coi=True,period=5, frame_rate = 200):
 
+def cwt_analysis(params, mother_name="mexican_hat",num_scales=12, first_scale = None, scale_distance=1.0, apply_coi=True, period=5, frame_rate = 200):
+    """Achieve the continous wavelet analysis of given parameters
 
+    Parameters
+    ----------
+    params: arraylike
+        The parameters to analyze.
+    mother_name: string, optional
+        The name of the mother wavelet [default: mexican_hat].
+    num_scales: int, optional
+        The number of scales [default: 12].
+    first_scale: int, optional
+        The first scale indice
+    scale_distance: float, optional
+        The distance between scales [default: 1.0].
+    apply_coi: boolean, optional
+        Apply the Cone Of Influence (coi)
+    period: int, optional
+        The period of the mother wavelet [default: 5].
+    frame_rate: int, optional
+        The signal frame rate [default: 200].
+
+    Returns
+    -------
+    wavelet_matrix: ndarray
+    	The wavelet data resulting from the analysis
+    scales: arraylike
+    	The scale indices corresponding to the wavelet data
+    """
     # setup wavelet transform
     dt = 1. /float(frame_rate)  # frame length
     dj = scale_distance  # distance between scales in octaves
@@ -95,4 +220,19 @@ def cwt_analysis(params, mother_name="mexican_hat",num_scales=12, first_scale = 
 
 
 def cwt_synthesis(wavelet_matrix, mean = 0):
+    """Synthesizing a signal given a wavelet dataset
+
+    Parameters
+    ----------
+    wavelet_matrix: ndarray
+        The wavelet data matrix.
+    mean: float
+        The mean to translate the signal.
+
+    Returns
+    -------
+    arraylike
+    	The generated signal
+
+    """
     return sum(wavelet_matrix[:])+mean
