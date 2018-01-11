@@ -51,4 +51,4 @@ python3 wavelet_prosody_toolkit/wavelet_gui.py
 ```
 
 
-if it doesn't work, contact antti.suni@helsinki.fi
+if it doesn't work, please raise an issue.
