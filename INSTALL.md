@@ -36,15 +36,19 @@ if you get "command not found" or version < 3.5, download python3.6 from python.
 ```sh
 python3 --version
 ```
-> python3 --version
-should print something like: "Python 3.6.3 (v3.6.3:2c5fed86e0, Oct  3 2017, 00:32:08)"
+should print something like: `Python 3.6.3 (v3.6.3:2c5fed86e0, Oct  3 2017, 00:32:08)`
 
 - install required python libraries:
 ```sh
-python3 --version
+pip3 install --user pyqt5
+pip3 install --user numpy scipy
+python3 setup.py develop --user
 ```
 
-- cd to the directory where the Wavelet Prosody Analyzer was extracted and start prosody analyzer:
-> python3 wavelet_gui.py
+- start the Wavelet Prosody Analyzer:
+```sh
+python3 wavelet_prosody_toolkit/wavelet_gui.py
+```
+
 
 if it doesn't work, contact antti.suni@helsinki.fi
