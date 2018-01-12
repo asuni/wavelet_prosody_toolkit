@@ -636,10 +636,10 @@ class SigWindow(QtWidgets.QDialog):
         if self.fUpdate['params'] ==True:
             self.ax[2].cla()
             self.ax[3].cla()
-            self.ax[2].plot(misc.normalize(self.pitch)+12, label="F0")
-            self.ax[2].plot(misc.normalize(self.energy_smooth)+8, label="Energy")
-            #self.ax[2].plot(misc.normalize(self.energy)+8, label="Energy")
-            self.ax[2].plot(misc.normalize(self.rate)+4, label="Duration")
+            self.ax[2].plot(misc.normalize_std(self.pitch)+12, label="F0")
+            self.ax[2].plot(misc.normalize_std(self.energy_smooth)+8, label="Energy")
+            #self.ax[2].plot(misc.normalize_std(self.energy)+8, label="Energy")
+            self.ax[2].plot(misc.normalize_std(self.rate)+4, label="Duration")
 
 
             self.energy_smooth = self.energy_smooth[:np.min([len(self.pitch), len(self.energy_smooth)])]
@@ -654,21 +654,21 @@ class SigWindow(QtWidgets.QDialog):
                 duration =  np.ones(len(self.pitch))
                 if self.get_val(self.wF0) > 0:
 
-                    pitch = misc.normalize2(self.pitch)+self.get_val(self.wF0)
+                    pitch = misc.normalize_minmax(self.pitch)+self.get_val(self.wF0)
                 if self.get_val(self.wEnergy)> 0:
-                    energy = misc.normalize2(self.energy_smooth)+self.get_val(self.wEnergy)
+                    energy = misc.normalize_minmax(self.energy_smooth)+self.get_val(self.wEnergy)
                 if self.get_val(self.wDuration)>0:
-                    duration = misc.normalize2(self.rate)+self.get_val(self.wDuration)
+                    duration = misc.normalize_minmax(self.rate)+self.get_val(self.wDuration)
 
                 params = pitch * energy * duration
 
 
             else:
-                params = misc.normalize(self.pitch)*float(self.wF0.text()) + \
-                         misc.normalize(self.energy_smooth)*float(self.wEnergy.text()) + \
-                         misc.normalize(self.rate)*float(self.wDuration.text())
+                params = misc.normalize_std(self.pitch)*float(self.wF0.text()) + \
+                         misc.normalize_std(self.energy_smooth)*float(self.wEnergy.text()) + \
+                         misc.normalize_std(self.rate)*float(self.wDuration.text())
             #params = smooth_and_interp.remove_bias(params, 800)
-            self.params = misc.normalize(params)
+            self.params = misc.normalize_std(params)
             self.ax[2].plot(params,color="black", linewidth=2, label="Combined")
 
 
