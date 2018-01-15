@@ -7,4 +7,5 @@ Contents
 .. toctree::
    :maxdepth: 3
 
-   modules
+   _modules/wavelet_prosody_toolkit
+   _modules/wavelet_prosody_toolkit.prosody_tools
