@@ -2,7 +2,7 @@
 
 - extract the info from the source code
 ```sh
-sphinx-apidoc ../wavelet_prosody_toolkit -o _modules
+sphinx-apidoc ../wavelet_prosody_toolkit -o _modules -e -M
 ```
 - generate the html documentation
 ```sh

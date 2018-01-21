@@ -1,9 +1,6 @@
-.. include:: ../README.rst
 
-Api
----
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
-   _modules/wavelet_prosody_toolkit
-   _modules/wavelet_prosody_toolkit.prosody_tools
+   readme_link
+   reference
