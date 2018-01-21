@@ -1,9 +1,7 @@
-Welcome to myproject's documentation!
-=====================================
+.. include:: ../README.rst
 
-
-Contents
---------
+Api
+---
 .. toctree::
    :maxdepth: 3
 
