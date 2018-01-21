@@ -2,10 +2,34 @@
 # -*- coding: utf-8 -*-
 """
 AUTHOR
+    - Antti Suni <antti.suni@helsinki.fi>
+    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
 
 DESCRIPTION
 
+usage: cwt_analysis_synthesis.py [-h] [-v] [-M MODE] [-m MEAN_F0] [-o OUTPUT]
+                                 [-P]
+                                 input_file
+
+Tool for CWT analysis/synthesis of the F0
+
+positional arguments:
+  input_file            Input signal or F0 file
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --verbosity       increase output verbosity
+  -M MODE, --mode MODE  script mode: 0=analysis, 1=synthesis, 2=analysis/synthesis
+  -m MEAN_F0, --mean_f0 MEAN_F0
+                        Mean f0 needed for synthesis (unsed for analysis modes)
+  -o OUTPUT, --output OUTPUT
+                        output directory for analysis or filename for synthesis.
+                        (Default: input_file directory [Analysis] or <input_file>.f0 [Synthesis])
+  -P, --plot            Plot the results
+
+
 LICENSE
+	See LICENSE
 """
 
 import sys
@@ -23,6 +47,7 @@ from wavelet_prosody_toolkit.prosody_tools import f0_processing, cwt_utils
 
 import numpy as np
 
+# List of logging levels used to setup everything using verbose option
 LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
 ###############################################################################
@@ -49,11 +74,14 @@ def load_f0(input_file):
 
     return raw_f0
 
+
 ###############################################################################
 # Main function
 ###############################################################################
 def run():
     """Main entry function
+
+    This function contains the code needed to achieve the analysis and/or the synthesis
     """
     global args
     scales = None
@@ -101,8 +129,6 @@ def run():
             logging.info("writing scale \"%s.cwt.%d\"" % (output_file, i))
             np.savetxt(output_file+".cwt."+str(i+1), scales[i].astype('float'),fmt="%f", delimiter="\n")
 
-
-
     # then add deltas etc, train and generate
     # then synthesis by the following, voicing and mean value
     # have to come from other sources
@@ -146,10 +172,14 @@ def run():
 #  Envelopping
 ###############################################################################
 def main():
+    """Entry point for CWT analysis/synthesis tool
+
+    This function is a wrapper to deal with arguments and logging.
+    """
     global args
 
     try:
-        parser = argparse.ArgumentParser(description="")
+        parser = argparse.ArgumentParser(description="Tool for CWT analysis/synthesis of the F0")
 
         # Add options
         parser.add_argument("-v", "--verbosity", action="count", default=0,

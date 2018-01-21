@@ -2,10 +2,40 @@
 # -*- coding: utf-8 -*-
 """
 AUTHOR
+    - Antti Suni <antti.suni@helsinki.fi>
+    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
 
 DESCRIPTION
 
+usage: prosody_labeller.py [-h] [-v] [-H] [-P] [-l LEVEL] [-L LABEL]
+                           [-n NB_SCALES] [-d SCALE_DIST] [-f SCALE_FACTOR]
+                           input_file output_file
+
+Prosody events labeller tool based on wavelet transformation
+
+positional arguments:
+  - input_file            input wave file to analyze (a label file with the same basename should be available)
+  - output_file           Output file which contains the events in a csv format
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --verbosity       Increase output verbosity
+  -H, --with-header     Also print the header
+  -P, --plot            Plot the results
+  -l LEVEL, --level LEVEL
+                        The analyzed level
+  -L LABEL, --label LABEL
+                        Alternative label filename
+  -n NB_SCALES, --nb-scales NB_SCALES
+                        The number of scales for the cwt
+  -d SCALE_DIST, --scale-dist SCALE_DIST
+                        The distance between scales
+  -f SCALE_FACTOR, --scale-factor SCALE_FACTOR
+                        Scaling factor
+
+
 LICENSE
+	See LICENSE
 """
 
 # System
@@ -42,6 +72,7 @@ except Exception as ex:
     logging.info("pylab is not available, so plotting is not available")
 
 
+# List of logging levels used to setup everything using verbose option
 LOG_LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
 
@@ -203,7 +234,8 @@ def plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominence
 # Main function
 ###############################################################################
 def run():
-    """Main entry function
+    """Main function which wraps the prosody labeller tool
+
     """
     global args
 
@@ -246,7 +278,9 @@ def run():
 #  Envelopping
 ###############################################################################
 def main():
-    """Entry point
+    """Entry point for the prosody labeller tool
+
+    This function is a wrapper to deal with arguments and logging.
     """
     global args
 
