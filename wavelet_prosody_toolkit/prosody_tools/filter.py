@@ -6,6 +6,9 @@ This module contains butter filter help functions copied from http://scipy-cookb
 
 from scipy.signal import butter, lfilter
 
+# Logging
+import logging
+logger = logging.getLogger(__name__)
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     """Generate the butter bandpass filter
@@ -37,7 +40,6 @@ def butter_bandpass(lowcut, highcut, fs, order=5):
     high = highcut / nyq
     b, a = butter(order, [low, high], btype='band')
 
-    print(type(b))
     return b, a
 
 

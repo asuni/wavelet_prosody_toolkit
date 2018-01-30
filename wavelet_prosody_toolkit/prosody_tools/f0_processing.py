@@ -258,7 +258,7 @@ def reaper(in_wav_file, waveform, fs, f0_min, f0_max):
         pm_times, pm,f0_times, f0, corr = pyreaper.reaper(waveform, fs, f0_min, f0_max)
 
     else:
-        print("error") # FIXME SLM: ????
+        logger.error("error") # FIXME SLM: ????
         # use external REAPER pitch extraction binary if pyreaper not found
         import os
         _curr_dir = os.path.dirname(os.path.realpath(__file__))
@@ -267,6 +267,8 @@ def reaper(in_wav_file, waveform, fs, f0_min, f0_max):
         os.system(_reaper_bin + " -m %d -x %d -a -u 0.005 -i %s -f %s" % (f0_min, f0_max, in_wav_file, out_est_file))
         f0 = np.loadtxt(out_est_file, skiprows=7, usecols=[2])
         f0[f0<0] = 0.0
+
+
     return f0
 
 def extract_f0(filename = "", waveform=[], fs=16000, f0_min = 0, f0_max = 0):
@@ -318,7 +320,7 @@ def read_f0(filename):
         f0_f = os.path.splitext(filename)[0]+ext
 
         if os.path.exists(f0_f):
-            print("reading F0 file", f0_f)
+            logger.info("reading F0 file", f0_f)
             try:
                 # one f0 value per line
                 return np.loadtxt(f0_f)
@@ -327,7 +329,7 @@ def read_f0(filename):
                 try:
                     return np.loadtxt(f0_f, skiprows=4)
                 except:
-                    print("unknown format")
+                    logger.error("unknown format for F0 value in file \"%s\"" % filename)
 
 
     return None

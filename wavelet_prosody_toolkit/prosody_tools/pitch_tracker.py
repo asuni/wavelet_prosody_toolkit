@@ -13,6 +13,10 @@ from scipy.io import wavfile
 import scipy.signal
 
 
+# Logging
+import logging
+logger = logging.getLogger(__name__)
+
 
 def _get_f0(spec, min_hz, max_hz, thresh):
 
@@ -47,7 +51,7 @@ def simple_pitch(pic, min_hz=50, max_hz=450,thresh=50.0, DEBUG=False):
     #attenuate = np.sqrt(np.linspace(5,.1, pic.shape[1]))
     #pic_smooth*=attenuate
 
-    print("ok")
+    logger.debug("ok")
 
     if DEBUG:
         #pylab.imshow(((pic_smooth+1).T), aspect='auto')
@@ -85,7 +89,7 @@ def simple_pitch(pic, min_hz=50, max_hz=450,thresh=50.0, DEBUG=False):
             window=np.zeros(len(pic_smooth[i]))
             st = int(np.max((0, int(smoothed[i]-win_len))))
             end = int(np.min((int(smoothed[i]+win_len), win_len*2-st)))
-            #print(st, end, win_len*2-end)
+            logger.debug("start=%d, end=%d, offset=%d" % (st, end, win_len*2-end))
             window[st:end]=g_window[win_len*2-end:]
             pic_smooth[i] = (pic_smooth[i]*window)
         if DEBUG:
@@ -141,7 +145,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
     params = scipy.signal.resample_poly(params, 1., int(round(fs/sample_rate)))
     #params = misc.normalize_std(params)
     #params = misc.resample(params, int(len(params)/(fs/sample_rate)))
-    print("downsampled")
+    logger.info("downsampled")
     # sometimes the final byte sample messes the analysis or what is the reason
     params = params[:len(params)-1]
 
@@ -165,7 +169,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
 
 
     # use morlet for good frequency resolution
-    print("cwt")
+    logger.info("Compute CWT")
 
 
     (wavelet_matrix,scales) = cwt_utils.cwt_analysis(params, mother_name="morlet",first_scale = s0, num_scales=J, scale_distance=dj, apply_coi=False,period=5, frame_rate = sample_rate)
@@ -209,7 +213,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
 
 
 
-    print("inst freq done")
+    logger.info("Inst. Freq. done")
 
     # normalize magnitudes
     mags = (mags-mags.min())/mags.ptp()
@@ -226,8 +230,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
 
 
     # map harmonics down
-
-    print ("harmonics..")
+    logger.info("Compute harmonics..")
 
     #thresh =0.025
     #thresh =0.02
@@ -248,7 +251,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
         acorr1 = np.correlate(pic[i,:length], pic[i,:length], mode='same') #[length-1:]
         pic[i, :int(length/2.)] =  (1.-acorr_weight)*pic[i,:int(length/2.)] + acorr_weight*acorr1[int(len(acorr1)/2.):]
 
-    print("done..")
+    logger.info("harmonics done..")
 
 
     if DEBUG:
@@ -259,7 +262,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
     # pic[:,max_hz:] = 0
     #pic= scipy.ndimage.filters.gaussian_filter(pic,[1.5,1.5])
     #pic /=np.max(pic)
-    print("track pitch..")
+    logger.info("Track pitch..")
     pitch = simple_pitch(pic,min_hz, max_hz, voicing_thresh, DEBUG=DEBUG)
     if DEBUG:
         pylab.imshow(pic[:, 0:].T, interpolation='nearest', origin='lower',aspect='auto')
@@ -267,7 +270,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=50., voicing_thr
         #pylab.plot(f0_processing.process(pitch), 'white', linewidth=5, alpha=0.3)
         #return (pitch,pic[:, 0:max_hz].T)
         pylab.show()
-    print("done")
+    logger.info("Track pitch done")
     return (pitch,pic)
 
 
