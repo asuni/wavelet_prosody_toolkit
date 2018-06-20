@@ -518,8 +518,9 @@ class SigWindow(QtWidgets.QDialog):
 
 
     def onF0Changed(self):
+        
         self.fUpdate['f0']=True
-        self.analysis()
+        #self.analysis()
 
     def onSignalRate(self):
         if self.signalRate.isChecked():
@@ -708,6 +709,8 @@ class SigWindow(QtWidgets.QDialog):
                 self.logger.debug("analyzing pitch..")
                 min_f0 = float(str(self.min_f0.text()))
                 max_f0 = float(str(self.max_f0.text()))
+                max_f0 = np.max([max_f0, 10.])
+                min_f0 = np.min([max_f0-1., min_f0]) 
 
                 #raw_pitch2 = f0_processing.extract_f0(self.cur_wav, self.sig, self.orig_sr, min_f0, max_f0)
                 (raw_pitch, pic) = pitch_tracker.inst_freq_pitch(self.cur_wav,min_f0, max_f0, float(self.harmonics.value()),float(self.voicing.value()))
