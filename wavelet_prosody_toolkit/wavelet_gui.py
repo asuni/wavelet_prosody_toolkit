@@ -146,9 +146,11 @@ class SigWindow(QtWidgets.QDialog):
             self.fUpdate[f] = True
         self.fProcessAll=False
         self.fUsePrecalcF0 = True
+       
+        self.current_tier = ""
         self.current_tier_index = -1
+        self.current_dur_tiers = []
         self.current_dur_tier_indices = []
-
 
         ##########################################
         # Setup the plot area
@@ -436,26 +438,10 @@ class SigWindow(QtWidgets.QDialog):
         groupBox.setVisible(True)
         return groupBox
 
-
-    # reading of textgrids and labs
+    # reading of textgrids and lab, use previously selected tiers 
     def populateTierList(self):
         import os.path
-
-        # remember current tier selections
-
-
-        current_tier = self.tierlist.currentIndex()
-        current_dur_tiers = [x.row() for x in self.signalTiers.selectedIndexes()]
-        if current_tier >=0:
-            self.current_tier_index = current_tier
-        if len(current_dur_tiers) > 0:
-            self.current_dur_tier_indices = current_dur_tiers
-
-
-        current = unicode(self.tierlist.currentText())
-        current_index = self.tierlist.currentIndex()
-        current2 = [item.text() for item in self.signalTiers.selectedItems()]
-
+    
         # clear selection
         self.tierlist.clear()
         self.signalTiers.clear()
@@ -474,17 +460,21 @@ class SigWindow(QtWidgets.QDialog):
             if os.path.exists(grid):
                 self.tiers = lab.read_textgrid(grid)
             else:
-                logging.error(grid +" not found")
+                self.logger.debug(grid +" not found")
         if not self.tiers:
-            return
+            return 
 
-
-        for k in sorted(self.tiers.keys()):
+        for k in self.tiers.keys():
             self.tierlist.addItem(k)
             self.signalTiers.addItem(k)
-        try:
 
-            if self.current_tier_index >= 0:
+        # activate previously selected tiers 
+        try:
+            index = self.tierlist.findText(self.current_tier, QtCore.Qt.MatchFixedString)
+            if index>=0:
+                self.tierlist.setCurrentIndex(index)
+            
+            elif self.current_tier_index >= 0:
                 self.tierlist.setCurrentIndex(self.current_tier_index)
         except:
             try:
@@ -492,19 +482,17 @@ class SigWindow(QtWidgets.QDialog):
                 self.tierlist.setCurrentIndex(0)
             except:
                 pass
-        if len(self.current_dur_tier_indices) > 0:
+        
+        if len(self.current_dur_tiers) > 0:
+            for i in range(0,len(self.current_dur_tiers)):
+                items = self.signalTiers.findItems(self.current_dur_tiers[i], QtCore.Qt.MatchFixedString)
+                if len(items)>0:
+                    items[0].setSelected(True)
+      
+        if len(self.current_dur_tiers) > len(self.signalTiers.selectedItems()):
+            self.logger.debug("Signal tier names do not match previously selected ones!")
 
-            for i in self.current_dur_tier_indices:
-                try:
-                    cur=self.signalTiers.item(i)
-                    cur.setSelected(True)
-                except:
-                    pass
-        else:
-            self.signalTiers.item(0).setSelected(True)
-
-
-
+    
     def createTierList(self):
         groupBox = QtWidgets.QGroupBox("Tier for Prosody Annotation")
         self.tierlist = QtWidgets.QComboBox()
@@ -524,7 +512,8 @@ class SigWindow(QtWidgets.QDialog):
 
     def onTierChanged(self, i):
         self.fUpdate['tiers']=True
-        #self.fUpdate['loma']=True
+        self.current_tier = unicode(self.tierlist.currentText())
+        self.current_tier_index = self.tierlist.currentIndex()
         self.analysis()
 
 
@@ -537,6 +526,8 @@ class SigWindow(QtWidgets.QDialog):
             self.signalTiers.setEnabled(False)
         else:
             self.signalTiers.setEnabled(True)
+        self.current_dur_tiers = [item.text() for item in self.signalTiers.selectedItems()]
+        self.current_dur_tier_indices =  [x.row() for x in self.signalTiers.selectedIndexes()]
         self.fUpdate['duration']=True
         self.analysis()
 
