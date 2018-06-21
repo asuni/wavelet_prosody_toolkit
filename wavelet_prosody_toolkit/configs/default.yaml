@@ -1,0 +1,44 @@
+
+
+# Pitch tracking
+
+use_existing_f0: true               # do not perform pitch tracking if .f0 file exists
+pitch_tracker: inst_freq            # inst_freq (our algorithm) or REAPER (from google)
+min_f0:        50
+max_f0:        400
+voicing_threshold:  50              # from 0 (all voiced) to 100 (no voicing)
+interpolation_method: true_envelope # fill unvoiced sections; "linear", "pchip" or "true_envelope"
+
+
+# acoustic feature weights
+
+weights:
+   f0:       1.0
+   energy:   1.0
+   duration: 1.0
+
+
+# labels
+# adjust these to your annotation scheme
+
+annotation_tier: word  
+duration_tiers: [segment, word]
+silence_symbols: ["#", "!pau", "<s>", "pau", "!sil", "sil", "", " ","<p>", "<p:>", "." ,",","?"]
+
+
+# wavelet transform
+
+mother wavelet: mexican_hat # mexican_hat, morlet or paul
+period:         3           # applies to morlet and paul wavelets (periods 2 - 5 are reasonable)
+
+
+# lines of maximum amplitude, defined as octaves below and above
+# the measured unit scale 
+
+prom_loma_start:     -3 # three octaves below word scale, for example
+prom_loma_end:        0  #  
+boundary_loma_start: -2
+boundary_loma_end:    1 # one octave higher than unit scale
+
+
+# more ..
