@@ -2,8 +2,8 @@
 
 # Pitch tracking
 
-use_existing_f0: true               # do not perform pitch tracking if .f0 file exists
-pitch_tracker: inst_freq            # inst_freq (our algorithm) or REAPER (from google)
+use_existing_f0: false                 # do not perform pitch tracking if .f0 file exists
+pitch_tracker: inst_freq               # inst_freq (our algorithm) or REAPER (from google)
 min_f0:        50
 max_f0:        400
 voicing_threshold:  50              # from 0 (all voiced) to 100 (no voicing)
@@ -15,20 +15,20 @@ interpolation_method: true_envelope # fill unvoiced sections; "linear", "pchip" 
 weights:
    f0:       1.0
    energy:   1.0
-   duration: 1.0
+   duration: 0.5
 
 
 # labels
 # adjust these to your annotation scheme
 
-annotation_tier: word  
-duration_tiers: [segment, word]
+annotation_tier: words  
+duration_tiers: [segments, words]
 silence_symbols: ["#", "!pau", "<s>", "pau", "!sil", "sil", "", " ","<p>", "<p:>", "." ,",","?"]
 
 
 # wavelet transform
 
-mother wavelet: mexican_hat # mexican_hat, morlet or paul
+mother_wavelet: mexican_hat # mexican_hat, morlet or paul
 period:         3           # applies to morlet and paul wavelets (periods 2 - 5 are reasonable)
 
 
