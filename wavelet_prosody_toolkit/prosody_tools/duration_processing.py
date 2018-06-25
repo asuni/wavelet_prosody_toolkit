@@ -4,7 +4,7 @@ import numpy as np
 
 SIL_SYMBOLS = ["#","!pau", "<s>", "pau", "!sil", "sil", "", " ","<p>", "<p:>", ".", ",","?"]
 
-def get_dur_stats(labels, linear=False, sil_symbols=[]):
+def _get_dur_stats(labels, linear=False, sil_symbols=[]):
     durations = []
     for i in range(len(labels)):
         (st,en, unit) = labels[i]
@@ -23,11 +23,12 @@ def get_rate(params,p=2,hp=10,lp=150, fig=None):
     estimation of speech rate as a center of gravity of wavelet spectrum
     similar to method described in "Boundary Detection using Continuous Wavelet Analysis" (2016)
     """
-    import prosody_tools.cwt_utils as cwt_utils
+    from . import cwt_utils
 
     params = smooth_and_interp.smooth(params, hp)
     params -= smooth_and_interp.smooth(params, lp)
-    wavelet_matrix, scales  = cwt_utils.cwt_analysis(params, mother_name="Paul",num_scales=80, scale_distance=0.1, apply_coi=True,period=2)
+
+    wavelet_matrix, scales  = cwt_utils.cwt_analysis(params, mother_name="Morlet",num_scales=80, scale_distance=0.1, apply_coi=True,period=2)
     wavelet_matrix = abs(wavelet_matrix)
 
     rate = np.zeros(len(params))
@@ -49,18 +50,16 @@ def get_rate(params,p=2,hp=10,lp=150, fig=None):
 
 
 
-def duration(labels, rate=200,linear=False,bump=False, sil_symbols=SIL_SYMBOLS):
+def duration(labels, rate=200,linear=False,bump=True, sil_symbols=SIL_SYMBOLS):
     """
     construct duration signal from labels
     """
-    if isinstance(labels,str):
-        pass
-
+    
     dur = np.zeros(len(labels))
     params = np.zeros(int(labels[-1][1]*rate))
     prev_end = 0
-    (min_dur, max_dur, mean_dur) = get_dur_stats(labels,linear, sil_symbols)
-    bump=True
+    (min_dur, max_dur, mean_dur) = _get_dur_stats(labels,linear, sil_symbols)
+   
     for i in range(0,len(labels)):
 
         (st,en, unit) = labels[i]
@@ -69,47 +68,52 @@ def duration(labels, rate=200,linear=False,bump=False, sil_symbols=SIL_SYMBOLS):
         dur[i] = en-st
         if not linear:
             dur[i] = np.log(dur[i]+1.)
+
         if unit.lower() in sil_symbols:
+            dur[i] = min_dur
 
-            dur[i] = min_dur #np.log(dur[i]+1.) #min_dur
-            #continue
+        # skip very short units, likely labelling errors
+        if (en<=st+0.02):
+            continue
 
-        if 1==1: #unit.lower() not in sil_symbols:
+        # unit duration -> height of the duration contour in the middle of the unit
+        params[int(st+(en-st)/2.0)] = dur[i]
 
-            params[int(st+(en-st)/2.0)] = dur[i]
-            if bump:
-
-                try:
-                    #params[int(st)]= (dur[i]+dur[i-1])/4. #4 = arbitrary
-                    if i > 0 and labels[i]: # not in sil_symbols:
-                        params[int(st)]= (dur[i]+dur[i-1])/2.- (abs(dur[i]-dur[i-1])) #4 = arbitrary
-                    #else:
-                    #    params[int(st)]= (dur[i]+dur[i-1])/2
-                except:
-                    pass
-                #params[int(st)]= 0.001
-
-        # handle gaps in labels
+        # "bump" -> emphasize difference between adjacent unit durations
+        if i > 0 and bump:
+            #params[int(st)] = 0
+            params[int(st)]= (dur[i]+dur[i-1])/2.- (abs(dur[i]-dur[i-1]))
+            
+        # handle gaps in labels similarly to silences
         if  st > prev_end and i > 1:
             gap_dur = min_dur
             params[int(prev_end+(st-prev_end)/2.0)] = (gap_dur) #0.001 #-max_dur
         prev_end = en
+
+    # set endpoints to mean in order to avoid large "valleys"
     params[0] = np.mean(dur)
     params[-1] = np.mean(dur)
-    #params = smooth_and_interp.interpolate_zeros(params, 'pchip')
+    
+    # make continous duration contour and smooth a bit
     params = smooth_and_interp.interpolate_zeros(params, 'pchip')
     params = smooth_and_interp.smooth(params, 20)
-    #params[1:]=np.diff(params)
-    #params[0] = 0
 
     return params
 
-def get_duration_signal(tiers =[], weights = [], sil_symbols=SIL_SYMBOLS, rate=1):
 
+
+def get_duration_signal(tiers =[], weights = [], sil_symbols=SIL_SYMBOLS, rate=1):
+    """
+    Construct duration contour from labels. If many tiers are selected, 
+    construct contours for each tier and return a weighted sum of those
+
+    """
+    
     durations = []
     lengths  = []
     for t in tiers:
         durations.append(misc.normalize_std(duration(t, rate=rate, sil_symbols=sil_symbols)))
+    
     durations = misc.match_length(durations)
     sum_durations =np.zeros(len(durations[0]))
 
@@ -117,65 +121,6 @@ def get_duration_signal(tiers =[], weights = [], sil_symbols=SIL_SYMBOLS, rate=1
         weights = np.ones(len(tiers))
     for i in range(len(durations)):
         sum_durations+=durations[i]*weights[i]
-    #print(np.max(sum_durations))
-    #return np.diff(sum_durations)
+
     return (sum_durations)
 
-def get_durations_from_file(lab_file, rate=1, tiers = ["segments", "words"],sil_symbols = SIL_SYMBOLS):
-
-
-    from . import lab
-    labels = []
-    if lab_file.lower().endswith("lab"):
-        labels = lab.read_htk_label(lab_file)
-
-    elif lab_file.lower().endswith("textgrid"):
-        pass
-    if not labels:
-        print("reading "+lab_file+" failed")
-        return
-    durations = []
-    lengths = []
-    for t in tiers:
-
-        if labels.has_key(t):
-            #durations.append(duration(labels[t]))
-            durations.append(misc.normalize_std(duration(labels[t], rate=rate, sil_symbols=sil_symbols)))
-
-
-
-    if len(tiers) < 2:
-        return (labels, durations)
-
-    # if many tiers specified, normalize and sum them
-
-    for d in durations:
-        lengths.append(len(d))
-
-    min_length = np.min(lengths)
-
-    sum_durations =np.zeros(min_length)
-    weights = [1.0, 1.0]
-    for i in range(len(durations)):
-        sum_durations+=durations[i][:min_length]*weights[i]
-    return (labels, sum_durations)
-
-    #import pylab
-    #pylab.plot(sum_durations)
-    #pylab.show()
-
-if __name__ == "__main__":
-
-    import sys
-    import pylab
-
-    labels, durations = get_durations(sys.argv[1])
-    import lab
-    lab.plot_labels(labels["words"])
-    print(labels)
-    pylab.plot(durations)
-    #pylab.show()
-    import cwt_utils
-    cwt_matrix, scales = cwt_utils.cwt_analysis(durations, num_scales=12, scale_distance=1.0)
-    pylab.contourf(cwt_matrix, 100)
-    pylab.show()
