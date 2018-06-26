@@ -37,6 +37,8 @@ import numpy as np
 # Types
 import types
 
+
+
 # CSV helpers
 import csv
 
@@ -53,6 +55,8 @@ from wavelet_prosody_toolkit.prosody_tools import cwt_utils, loma, lab
 # Globbing
 import os,glob
 
+# dict for configuation variables
+from collections import defaultdict
 # Python 3 compatibility hack
 try:
     unicode('')
@@ -130,7 +134,7 @@ class SigWindow(QtWidgets.QDialog):
 
         # read configuration 
         self.config = self.configuration()
-
+        
         # Define the logger
         self.logger = logging.getLogger(__name__)
         
@@ -283,17 +287,19 @@ class SigWindow(QtWidgets.QDialog):
         groupBox: QGroupBox
             The groupbox containing all the controls needed for F0 limit definition
         """
+        reg_ex = QtCore.QRegExp("[1-9][0-9][0-9]")
+        hz_validator = QtGui.QRegExpValidator(reg_ex) #, self.le_input)
 
         # Min F0
         self.min_f0 = QtWidgets.QLineEdit("min F0")
         self.min_f0.setText(str(self.config["min_f0"]))
-        self.min_f0.setInputMask("000")
+        self.min_f0.setValidator(hz_validator)
         self.min_f0.textChanged.connect(self.onF0Changed)
 
         # Max F0
         self.max_f0 = QtWidgets.QLineEdit("max F0")
         self.max_f0.setText(str(self.config["max_f0"]))
-        self.max_f0.setInputMask("000")
+        self.max_f0.setValidator(hz_validator)
         self.max_f0.textChanged.connect(self.onF0Changed)
 
         # Voicing
@@ -390,12 +396,13 @@ class SigWindow(QtWidgets.QDialog):
 
         # Signal rate
         self.signalRate = QtWidgets.QCheckBox("Estimate speech rate from signal")
-        self.signalRate.setChecked(False)
+        self.signalRate.setChecked(self.config["acoustic_estimation"])
         self.signalRate.clicked.connect(self.onSignalRate)
 
         # Delta
         self.diffDur = QtWidgets.QCheckBox("Use delta-duration")
         self.diffDur.setToolTip("Point-wise difference of the durations signal, empirically found to improve boundary detection in some cases")
+        self.diffDur.setChecked(self.config["delta_duration"])
         self.diffDur.clicked.connect(self.onSignalRate)
 
         # Setup the group box
@@ -431,7 +438,10 @@ class SigWindow(QtWidgets.QDialog):
 
         self.sum_feats=QtWidgets.QRadioButton("sum")
         self.mul_feats=QtWidgets.QRadioButton("product")
-        self.sum_feats.setChecked(True)
+        if self.config["feature_combination"]=="product":
+            self.mul_feats.setChecked(True)
+        else:
+            self.sum_feats.setChecked(True)
         combination_method.addButton(self.sum_feats)
         combination_method.addButton(self.mul_feats)
         self.sum_feats.clicked.connect(self.onSignalRate)
@@ -528,9 +538,8 @@ class SigWindow(QtWidgets.QDialog):
 
 
     def onF0Changed(self):
-        
         self.fUpdate['f0']=True
-        #self.analysis()
+
 
     def onSignalRate(self):
         if self.signalRate.isChecked():
@@ -700,11 +709,14 @@ class SigWindow(QtWidgets.QDialog):
         if self.fUpdate['energy']:
             # 'energy' is just a smoothed envelope here
             self.logger.debug("analyzing energy..")
-            self.energy = energy_processing.extract_energy(self.sig, self.orig_sr, 300, 5000)
-            #self.energy_smooth = smooth_and_interp.peak_smooth(self.energy, 30, 3)
-            self.energy_smooth = smooth_and_interp.peak_smooth(self.energy, 30, 3)
-            #self.energy_smooth = self.energy
-        raw_pitch = None
+            self.energy = energy_processing.extract_energy(self.sig, self.orig_sr, self.config["energy_band_min"], self.config["energy_band_max"], self.config["energy_calculation_method"])
+            if self.config["smooth_energy"]:            
+                self.energy_smooth = smooth_and_interp.peak_smooth(self.energy, 30, 3)
+            else:
+                self.energy_smooth = self.energy
+
+        
+
         if self.fUpdate['f0']:
             self.ax[1].cla()
             self.pitch = None
@@ -713,12 +725,14 @@ class SigWindow(QtWidgets.QDialog):
             if self.bUseExistingF0.isChecked():
                 raw_pitch = f0_processing.read_f0(self.cur_wav)
 
-            # else use reaper
+            # if no existing f0 provided or demanded, perform analysis
             if raw_pitch is None:
                 # analyze pitch
                 self.logger.debug("analyzing pitch..")
+
                 min_f0 = float(str(self.min_f0.text()))
                 max_f0 = float(str(self.max_f0.text()))
+
                 max_f0 = np.max([max_f0, 10.])
                 min_f0 = np.min([max_f0-1., min_f0]) 
                 if self.config["pitch_tracker"] == "REAPER":
@@ -738,9 +752,7 @@ class SigWindow(QtWidgets.QDialog):
             except:
                 # f0_processing.process crashes if raw_pitch is all zeros, kludge
                 self.pitch = raw_pitch
-            #self.pitch2 = f0_processing.process(raw_pitch2)
-            #self.ax[1].plot(raw_pitch2,color='red', linewidth=1)
-            #self.ax[1].plot(self.pitch2,color='red', linewidth=2)
+            
             self.ax[1].plot(raw_pitch,color='black', linewidth=1)
             self.ax[1].plot(self.pitch,color='black', linewidth=2)
             self.ax[1].set_ylim(np.min(self.pitch)*0.75, np.max(self.pitch)*1.2)
@@ -762,8 +774,9 @@ class SigWindow(QtWidgets.QDialog):
                     sig_tiers.append(self.tiers[item.text()])
 
                 try:
-                    self.rate = duration_processing.get_duration_signal(sig_tiers)
+                    self.rate = duration_processing.get_duration_signal(sig_tiers, sil_symbols=self.config["silence_symbols"])
                 except:
+                    self.logger.debug("Duration signal construction failed.")
                     self.rate = np.zeros(len(self.pitch))
 
             if self.diffDur.isChecked():
@@ -810,9 +823,10 @@ class SigWindow(QtWidgets.QDialog):
                 params = misc.normalize_std(self.pitch)*float(self.wF0.text()) + \
                          misc.normalize_std(self.energy_smooth)*float(self.wEnergy.text()) + \
                          misc.normalize_std(self.rate)*float(self.wDuration.text())
-            #params = smooth_and_interp.remove_bias(params, 800)
+            if self.config["detrend"]:
+                params = smooth_and_interp.remove_bias(params, 800)
             self.params = misc.normalize_std(params)
-            self.ax[2].plot(params,color="black", linewidth=2, label="Combined")
+            self.ax[2].plot(self.params,color="black", linewidth=2, label="Combined")
 
 
         try:
@@ -824,29 +838,39 @@ class SigWindow(QtWidgets.QDialog):
             self.ax[3].cla()
 
         # do wavelet analysis
-        #n_scales = 22
-        n_scales = 40
-        scale_dist = 0.25
+
         if self.fUpdate['cwt']:
             self.logger.debug("wavelet transform...")
 
             
-            (self.cwt,self.scales) = cwt_utils.cwt_analysis(self.params, mother_name=self.config["mother_wavelet"],period=self.config["period"],num_scales=n_scales, scale_distance=scale_dist,apply_coi=True)
-            self.cwt = np.real(self.cwt)
-            #self.cwt = np.abs(self.cwt)
+            (self.cwt,self.scales) = cwt_utils.cwt_analysis(self.params,
+                                                            mother_name=self.config["mother_wavelet"],
+                                                            period=self.config["period"],
+                                                            num_scales=self.config["num_scales"],
+                                                            scale_distance=self.config["scale_distance"],
+                                                            apply_coi=True)
+            if self.config["magnitude"]:
+                self.cwt = np.log(np.abs(self.cwt)+1.)
+            else:
+                self.cwt = np.real(self.cwt)
+
 
             self.scales*=PLOT_SR
             self.fUpdate['loma'] = True
 
         if self.fUpdate['tiers'] or self.fUpdate['cwt']:
             import matplotlib.colors as colors
-            self.ax[-1].contourf(np.real(self.cwt),100,  norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05,vmin=-1.0, vmax=1.0), cmap="jet")
+            if self.config["magnitude"]:
+                self.ax[-1].contourf(self.cwt,100,  cmap="jet") #norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05,vmin=-1.0, vmax=1.0), cmap="jet")
+            else:
+                self.ax[-1].contourf(self.cwt,100,  norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05,vmin=-1.0, vmax=1.0), cmap="jet")
       
 
         # calculate lines of maximum and minimum amplitude
         if self.fUpdate['loma'] and labels:
             self.logger.debug("lines of maximum amplitude...")
-
+            n_scales = self.config["num_scales"]
+            scale_dist = self.config["scale_distance"]
             # get scale corresponding to avg unit length of selected tier
             unit_scale = misc.get_best_scale2(self.scales, labels)
 
@@ -976,11 +1000,11 @@ class SigWindow(QtWidgets.QDialog):
         # read configuration file
         try:
             with open(args.config, 'r') as f:
-                config = yaml.load(f)
+                config = defaultdict(lambda:False,yaml.load(f))
         except IOError:
             print("configuration file "+args.config+" not found.")
             sys.exit(1)
-            
+        print(config["xxx"])
         return config
     
 
