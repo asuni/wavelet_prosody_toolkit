@@ -6,15 +6,14 @@ from . import smooth_and_interp, misc
 import logging
 logger = logging.getLogger(__name__)
 
-#def extract_energy(waveform, min_freq=200, max_freq=3000, method='mag', target_rate=200):
 
-def extract_energy(waveform, fs=16000, min_freq=200, max_freq=3000, method='mag', target_rate=200):
+
+def extract_energy(waveform, fs=16000, min_freq=200, max_freq=3000, method='rms', target_rate=200):
     #python 2, 3 compatibility hack
     try:
         basestring
     except NameError:
         basestring = str
-
     # accept both wav-files and waveform arrays
     if isinstance(waveform, basestring):
 
@@ -38,7 +37,7 @@ def extract_energy(waveform, fs=16000, min_freq=200, max_freq=3000, method='mag'
         win = 0.005 *fs
         energy = smooth_and_interp.peak_smooth(abs(lp_waveform), 200,win)
 
-    elif method == "mag":
+    elif method == "rms":
         energy=np.sqrt(lp_waveform**2)
     logger.debug("fs = %d, target_rate = %d, fs/target_rate = %f" % (fs, target_rate, fs/target_rate))
     #scipy complains about too large decimation if done in single step
@@ -62,7 +61,7 @@ if __name__ == "__main__":
 
     pylab.plot(np.log(hilbert_env))
     true_env = extract_energy(sys.argv[1], method='true_envelope')
-    mag = extract_energy(sys.argv[1], method='mag')
+    mag = extract_energy(sys.argv[1], method='rms')
 
     pylab.plot(misc.normalize_minmax(hilbert_env), label="hilbert envelope")
     pylab.plot(misc.normalize_minmax(true_env), label="true envelope")
@@ -74,7 +73,7 @@ if __name__ == "__main__":
     import f0_processing
     f0 = f0_processing.extract_f0(sys.argv[1])
     f0, true_env= misc.match_length(f0,true_env)
-    #true_env[f0<= 0] = 0
+
     pylab.plot(misc.normalize_minmax(true_env))
     pylab.plot(misc.normalize_minmax(f0_processing.process(f0)))
     pylab.show()
@@ -99,4 +98,4 @@ if __name__ == "__main__":
     pylab.plot(misc.normalize_minmax(hilbert_env))
     pylab.plot(process(misc.normalize_minmax(scipy.signal.medfilt(hilbert_env,5))))
     pylab.show()
-    raw_input()
+  
