@@ -36,6 +36,8 @@ setup(
             'release': ('setup.py', release)}},
     author_email='antti.suni@helsinki.fi',
     packages=find_packages(),
+    package_data={'': ['configs/default.yaml']},
+    include_package_data=True,
     install_requires=REQUIREMENTS,
     entry_points={
         'console_scripts': [
