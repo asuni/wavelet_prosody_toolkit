@@ -19,7 +19,7 @@ import time
 import logging
 
 # QT related imports
-from PyQt5 import QtGui,QtCore, QtWidgets, QtMultimedia
+from PyQt5 import QtCore, QtWidgets, QtMultimedia
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
@@ -68,9 +68,10 @@ PLOT_SR = 200.0
 # List of logging levels used to setup everything using verbose option
 LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
-##############################################################################################
+
+###############################################################################
 ## Callbacks
-##############################################################################################
+###############################################################################
 def press_zoom(self, event):
     """Zoom call back
 
@@ -84,8 +85,9 @@ def press_zoom(self, event):
         description
 
     """
-    event.key='x'
-    NavigationToolbar.press_zoom(self,event)
+    event.key = 'x'
+    NavigationToolbar.press_zoom(self, event)
+
 
 def drag_pan(self, event):
     """Drag pan callback
@@ -99,16 +101,13 @@ def drag_pan(self, event):
     event: type
         description
     """
-    event.key='x'
-    NavigationToolbar.drag_pan(self,event)
+    event.key = 'x'
+    NavigationToolbar.drag_pan(self, event)
 
 
-
-##############################################################################################
+###############################################################################
 ## Window class
-##############################################################################################
-
-
+###############################################################################
 class SigWindow(QtWidgets.QDialog):
     """Main window class
     """
@@ -129,7 +128,6 @@ class SigWindow(QtWidgets.QDialog):
         # Define the logger
         self.logger = logging.getLogger(__name__)
 
-
         ##########################################
         # Define internal variables
         ##########################################
@@ -146,7 +144,7 @@ class SigWindow(QtWidgets.QDialog):
             self.fUpdate[f] = True
         self.fProcessAll=False
         self.fUsePrecalcF0 = True
-       
+
         self.current_tier = ""
         self.current_tier_index = -1
         self.current_dur_tiers = []
@@ -162,9 +160,9 @@ class SigWindow(QtWidgets.QDialog):
 
         self.ax = []
         self.ax.append(plt.subplot(611))
-        self.ax.append(plt.subplot(612,sharex=self.ax[0]))
-        self.ax.append(plt.subplot(613,sharex=self.ax[0]))
-        self.ax.append(plt.subplot(6,1,(4,6),sharex=self.ax[0]))
+        self.ax.append(plt.subplot(612, sharex=self.ax[0]))
+        self.ax.append(plt.subplot(613, sharex=self.ax[0]))
+        self.ax.append(plt.subplot(6, 1, (4, 6), sharex=self.ax[0]))
 
         self.ax[0].set_ylabel("Spec")
         self.ax[1].set_ylabel("F0")
@@ -174,20 +172,18 @@ class SigWindow(QtWidgets.QDialog):
         self.canvas = FigureCanvas(self.figure)
         self.canvas.setMinimumSize(400, 400)
 
-
         ##########################################
         # Setup the toolbar
         ##########################################
         self.toolbar = NavigationToolbar(self.canvas, self)
-        self.toolbar.press_zoom=types.MethodType(press_zoom, self.toolbar)
-        self.toolbar.drag_pan=types.MethodType(drag_pan, self.toolbar)
-
+        self.toolbar.press_zoom = types.MethodType(press_zoom, self.toolbar)
+        self.toolbar.drag_pan = types.MethodType(drag_pan, self.toolbar)
 
         ##########################################
         # Setup the status bar
         ##########################################
         self.status = QtWidgets.QStatusBar()
-        self.status.setMaximumSize(800,30)
+        self.status.setMaximumSize(800, 30)
         self.status.showMessage("Wavelet Prosody Analyzer | to start, find a folder with audio files and associated labels ")
 
         ##########################################
@@ -202,12 +198,11 @@ class SigWindow(QtWidgets.QDialog):
         # Define directory listing
         ##########################################
         self.filelist = QtWidgets.QListWidget(self)
-        self.filelist.setMaximumSize(800,300)
+        self.filelist.setMaximumSize(800, 300)
         self.filelist.currentItemChanged.connect(self.onWavChanged)
 
-
         # Define directory selection button
-        self.chooseDir =QtWidgets.QPushButton('Select Speech Directory')
+        self.chooseDir = QtWidgets.QPushButton('Select Speech Directory')
         self.chooseDir.clicked.connect(self.dirDialog)
         self.chooseDir.setDefault(False)
         self.chooseDir.setAutoDefault(False)
@@ -225,7 +220,6 @@ class SigWindow(QtWidgets.QDialog):
         self.reprocess.setDefault(False)
         self.reprocess.setAutoDefault(False)
 
-
         # Define play button
         self.bPlay = QtWidgets.QPushButton("Play", self)
         self.bPlay.clicked.connect(self.play)
@@ -236,7 +230,6 @@ class SigWindow(QtWidgets.QDialog):
         self.bUseExistingF0 = QtWidgets.QCheckBox("Use existing F0 files if available")
         self.bUseExistingF0.clicked.connect(self.onF0Changed)
         self.bUseExistingF0.setToolTip("See examples folder for supported formats")
-
 
         ##########################################
         # Define the right part of the window
@@ -255,15 +248,13 @@ class SigWindow(QtWidgets.QDialog):
         right_layout.addWidget(self.createTierList())
         right_layout.addWidget(self.bPlay)
 
-
         ##########################################
         # Finalize the window layout
         ##########################################
         layout = QtWidgets.QHBoxLayout()
-        layout.addLayout(left_layout,3)
-        layout.addLayout(right_layout,1)
+        layout.addLayout(left_layout, 3)
+        layout.addLayout(right_layout, 1)
         self.setLayout(layout)
-
 
     def setF0Limits(self):
         """Setup the F0 limits area
@@ -300,17 +291,17 @@ class SigWindow(QtWidgets.QDialog):
         self.harmonics = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.harmonics.setSliderPosition(50)
         self.harmonics.setVisible(False)
-        #self.harmonics.valueChanged.connect(self.onF0Changed)
+        # self.harmonics.valueChanged.connect(self.onF0Changed)
 
         # Setup groupbox
         hbox = QtWidgets.QVBoxLayout()
         hbox.addWidget(self.min_f0)
         hbox.addWidget(self.max_f0)
         hbox.addWidget(self.voicing)
-        #hbox.addWidget(self.harmonics)
+        # hbox.addWidget(self.harmonics)
 
-        groupBox = QtWidgets.QGroupBox("minF0, maxF0, voicing threshold") #, harmonics")
-        #groupBox.setMaximumSize(200,200)
+        groupBox = QtWidgets.QGroupBox("minF0, maxF0, voicing threshold")  #, harmonics")
+        # groupBox.setMaximumSize(200,200)
         groupBox.setLayout(hbox)
         groupBox.setToolTip("min and max Hz of the speaker's f0 range, voicing threshold")
 
@@ -350,15 +341,14 @@ class SigWindow(QtWidgets.QDialog):
         self.wDuration.setInputMask("0.0")
         self.wDuration.setMaxLength(3)
 
-
         # Setup the groupbox
         box = QtWidgets.QGridLayout()
-        box.addWidget(l1, 0,0)
-        box.addWidget(l2, 0,1)
-        box.addWidget(l3, 0,2)
-        box.addWidget(self.wF0, 1,0)
-        box.addWidget(self.wEnergy, 1,1)
-        box.addWidget(self.wDuration, 1,2)
+        box.addWidget(l1, 0, 0)
+        box.addWidget(l2, 0, 1)
+        box.addWidget(l3, 0, 2)
+        box.addWidget(self.wF0, 1, 0)
+        box.addWidget(self.wEnergy, 1, 1)
+        box.addWidget(self.wDuration, 1, 2)
         groupBox.setLayout(box)
 
         return groupBox
@@ -399,14 +389,14 @@ class SigWindow(QtWidgets.QDialog):
         box.addWidget(self.diffDur)
         box.addWidget(self.signalRate)
         groupBox = QtWidgets.QGroupBox("Tier(s) for Duration Signal")
-        groupBox.setMaximumSize(400,150) # FIXME: see for not having hardcoded size
+        groupBox.setMaximumSize(400, 150)  # FIXME: see for not having hardcoded size
         groupBox.setLayout(box)
         groupBox.setToolTip("Generate duration signal from a tier or as a sum of two or more tiers.\nShift-click to multi-select, Ctrl-click to de-select")
 
         return groupBox
 
     def weight(self):
-        groupBox=QtWidgets.QGroupBox("frequency / time resolution")
+        groupBox = QtWidgets.QGroupBox("frequency / time resolution")
         groupBox.setToolTip("Interpolation between Mexican Hat wavelet (left) and Gaussian filter / scale-space (right).")
         self.weight = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.weight.sliderReleased.connect(self.onWeightChanged)
@@ -419,13 +409,12 @@ class SigWindow(QtWidgets.QDialog):
 
     def featureCombination(self):
 
+        groupBox = QtWidgets.QGroupBox("Feature Combination Method")
 
-        groupBox =  QtWidgets.QGroupBox("Feature Combination Method")
+        combination_method = QtWidgets.QButtonGroup() # Number group
 
-        combination_method =QtWidgets.QButtonGroup() # Number group
-
-        self.sum_feats=QtWidgets.QRadioButton("sum")
-        self.mul_feats=QtWidgets.QRadioButton("product")
+        self.sum_feats = QtWidgets.QRadioButton("sum")
+        self.mul_feats = QtWidgets.QRadioButton("product")
         self.sum_feats.setChecked(True)
         combination_method.addButton(self.sum_feats)
         combination_method.addButton(self.mul_feats)
@@ -438,10 +427,10 @@ class SigWindow(QtWidgets.QDialog):
         groupBox.setVisible(True)
         return groupBox
 
-    # reading of textgrids and lab, use previously selected tiers 
+    # reading of textgrids and lab, use previously selected tiers
     def populateTierList(self):
         import os.path
-    
+
         # clear selection
         self.tierlist.clear()
         self.signalTiers.clear()
@@ -455,44 +444,47 @@ class SigWindow(QtWidgets.QDialog):
                 self.tiers = lab.read_htk_label(lab_f)
             except:
                 pass
+
         if not self.tiers:
             grid = os.path.splitext(unicode(self.cur_wav))[0]+".TextGrid"
             if os.path.exists(grid):
                 self.tiers = lab.read_textgrid(grid)
             else:
                 self.logger.debug(grid +" not found")
+
         if not self.tiers:
-            return 
+            return
 
         for k in self.tiers.keys():
             self.tierlist.addItem(k)
             self.signalTiers.addItem(k)
 
-        # activate previously selected tiers 
+        # activate previously selected tiers
         try:
             index = self.tierlist.findText(self.current_tier, QtCore.Qt.MatchFixedString)
+
             if index>=0:
                 self.tierlist.setCurrentIndex(index)
-            
             elif self.current_tier_index >= 0:
                 self.tierlist.setCurrentIndex(self.current_tier_index)
+
         except:
             try:
                 self.signalTiers.setCurrentIndex(0)
                 self.tierlist.setCurrentIndex(0)
             except:
                 pass
-        
+
         if len(self.current_dur_tiers) > 0:
-            for i in range(0,len(self.current_dur_tiers)):
+            for i in range(0, len(self.current_dur_tiers)):
                 items = self.signalTiers.findItems(self.current_dur_tiers[i], QtCore.Qt.MatchFixedString)
-                if len(items)>0:
+
+                if len(items) > 0:
                     items[0].setSelected(True)
-      
+
         if len(self.current_dur_tiers) > len(self.signalTiers.selectedItems()):
             self.logger.debug("Signal tier names do not match previously selected ones!")
 
-    
     def createTierList(self):
         groupBox = QtWidgets.QGroupBox("Tier for Prosody Annotation")
         self.tierlist = QtWidgets.QComboBox()
@@ -502,63 +494,63 @@ class SigWindow(QtWidgets.QDialog):
         groupBox.setLayout(vbox)
         return groupBox
 
-
     ##############################################################
     ## Event callbacks
     ##############################################################
     def onWeightChanged(self):
-        self.fUpdate['cwt']=True
+        self.fUpdate['cwt'] = True
         self.analysis()
 
     def onTierChanged(self, i):
-        self.fUpdate['tiers']=True
+        self.fUpdate['tiers'] = True
         self.current_tier = unicode(self.tierlist.currentText())
         self.current_tier_index = self.tierlist.currentIndex()
         self.analysis()
 
-
     def onF0Changed(self):
-        
-        self.fUpdate['f0']=True
-        #self.analysis()
+        self.fUpdate['f0'] = True
 
     def onSignalRate(self):
         if self.signalRate.isChecked():
             self.signalTiers.setEnabled(False)
         else:
             self.signalTiers.setEnabled(True)
+
         self.current_dur_tiers = [item.text() for item in self.signalTiers.selectedItems()]
-        self.current_dur_tier_indices =  [x.row() for x in self.signalTiers.selectedIndexes()]
-        self.fUpdate['duration']=True
+        self.current_dur_tier_indices = [x.row() for x in self.signalTiers.selectedIndexes()]
+        self.fUpdate['duration'] = True
         self.analysis()
 
     def onWavChanged(self, curr, prev):
         if not curr:
             return
+
         self.cur_wav = self.dir+'/'+unicode(curr.text())
-        self.status.showMessage("Wavelet Prosody Analyzer | processing " +curr.text()+"...")
+        self.status.showMessage("Wavelet Prosody Analyzer | processing " + curr.text() + "...")
         self.populateTierList()
+
         time.sleep(0.05)
         QtWidgets.qApp.processEvents()
+
         self.fUpdate = dict.fromkeys(self.fUpdate, True)
         self.analysis()
         self.status.showMessage("Wavelet Prosody Analyzer | "+curr.text())
 
     def onReprocess(self):
-        self.fUpdate['params']=True
+        self.fUpdate['params'] = True
         self.analysis()
 
     def refresh_updates(self):
         for f in ['duration', 'f0', 'energy', 'wav']:
             if self.fUpdate[f]:
-                self.fUpdate['params']=True
+                self.fUpdate['params'] = True
 
         if self.fUpdate['params']:
-            self.fUpdate['cwt']=True
-            self.fUpdate['loma']=True
+            self.fUpdate['cwt'] = True
+            self.fUpdate['loma'] = True
 
         if self.fUpdate['tiers']:
-            self.fUpdate['loma']=True
+            self.fUpdate['loma'] = True
 
     #
     def processAll(self):
@@ -566,69 +558,55 @@ class SigWindow(QtWidgets.QDialog):
         """
         results = []
         if not self.fProcessAll:
-            self.fProcessAll=True
+            self.fProcessAll = True
             self.bProcessAll.setText("Stop Processing")
         else:
-            self.fProcessAll=False
+            self.fProcessAll = False
             self.bProcessAll.setText("Process All Files")
             return
 
         for i in range(self.filelist.count()):
-
             if not self.fProcessAll:
                 break
 
             # this triggers the analysis
             self.filelist.setCurrentRow(i)
 
-
             # get results
             feats = [unicode(self.filelist.currentItem().text())]
-            prominences= np.array_str(self.prominences[:,1], precision=3) #sprintf("%0.3f" % self.prominences)
+            self.prominences = np.array_str(self.prominences[:, 1], precision=3)
             for p in self.prominences:
                 feats.append("%0.5f" %p[1])
 
-            # if one line per utterance:
-            res_str = unicode(self.filelist.currentItem().text())+u"\t".join(self.prominences[:,1].astype('unicode')) #.join("\t")
-            results.append(feats) #self.prominences)
-
-            # if one file per utterance:
-
-            prom_f = os.path.splitext(unicode(self.cur_wav))[0]+".prom"
+            results.append(feats)
             self.logger.debug(feats)
-            time.sleep(0.05)
+            # time.sleep(0.05)  # FIXME: why sleeping?
 
 
-
-
-
-        self.logger.debug("writing results to "+ self.dir+"/results.txt")
-        with open(self.dir+"/results.txt", 'w') as res_file:
-            writer=csv.writer(res_file, delimiter='\t')
+        self.logger.debug("writing results to " + self.dir + "/results.txt")
+        with open(self.dir + "/results.txt", 'w') as res_file:
+            writer = csv.writer(res_file, delimiter='\t')
             writer.writerows(results)
 
         self.logger.debug("written")
-        self.status.showMessage("Wavelet Prosody Analyser | analyses saved in "+self.dir+"/results.txt")
-        self.fProcessAll=False
+        self.status.showMessage("Wavelet Prosody Analyser | analyses saved in " + self.dir + "/results.txt")
+        self.fProcessAll = False
         self.bProcessAll.setText("Process All Files")
-
 
     def dirDialog(self):
 
-        dirname = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', self.dir)) #os.getcwd()))
+        dirname = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', self.dir))
         self.wav_files = glob.glob(dirname+'/*.wav') #[Wv][Aa][Wv]') #(WAV)|(wav)')
         self.dir = dirname
         self.filelist.clear()
+
         for i in range(len(self.wav_files)):
-            #self.filelist.addItem(os.path.basename(self.wav_files[i].decode('utf-8'))) #'Item %s' % (i + 1))
             self.filelist.addItem(os.path.basename(self.wav_files[i])) #'Item %s' % (i + 1))
+
         if len(self.wav_files) > 0:
             self.status.showMessage("processing " + self.wav_files[i])
             QtWidgets.qApp.processEvents()
             self.filelist.setCurrentRow(0)
-
-
-
 
     def play(self):
         # todo: find python method for this,
@@ -637,14 +615,14 @@ class SigWindow(QtWidgets.QDialog):
         import tempfile
 
         # get the current selection
-        (st, end) =plt.gca().get_xlim()
-        st=np.max([0,st])
+        (st, end) = plt.gca().get_xlim()
+        st = np.max([0, st])
         self.logger.debug(st, end)
-        st/=PLOT_SR
-        end/=PLOT_SR
+        st /= PLOT_SR
+        end /= PLOT_SR
 
         # save to tempfile
-        #bug: cuts from the end?
+        # FIXME: cuts from the end?
         wav_slice = self.sig[int(st*self.orig_sr):int(end*self.orig_sr)]
         fname = tempfile.mkstemp()[1]
         misc.write_wav(fname, wav_slice, self.orig_sr)
@@ -653,7 +631,7 @@ class SigWindow(QtWidgets.QDialog):
         # NOTE: QSound.play used to fail silently on some systems
 
         try:
-            QtMultimedia.QSound.play(fname) #unicode(self.cur_wav))
+            QtMultimedia.QSound.play(fname)
         except:
             self.logger.debug("Qsound does not play")
             os.system("play "+fname)
@@ -680,25 +658,22 @@ class SigWindow(QtWidgets.QDialog):
 
             self.ax[0].cla()
             self.orig_sr, self.sig = misc.read_wav(self.cur_wav)
-            #downsample = int(self.orig_sr /ANALYSIS_SR)
-            #self.sig = misc.resample(self.sig, len(self.sig)/downsample)
-            #self.orig_sr = ANALYSIS_SR
-            self.plot_len = int(len(self.sig)*(PLOT_SR/self.orig_sr))
-            self.ax[0].specgram(self.sig,NFFT=200,noverlap=40, Fs = self.orig_sr,xextent=[0, self.plot_len], cmap="jet")
+            self.plot_len = int(len(self.sig) * (PLOT_SR/self.orig_sr))
+            self.ax[0].specgram(self.sig, NFFT=200, noverlap=40, Fs=self.orig_sr, xextent=[0, self.plot_len], cmap="jet")
 
 
         if self.fUpdate['energy']:
             # 'energy' is just a smoothed envelope here
             self.logger.debug("analyzing energy..")
             self.energy = energy_processing.extract_energy(self.sig, self.orig_sr, 300, 5000)
-            #self.energy_smooth = smooth_and_interp.peak_smooth(self.energy, 30, 3)
             self.energy_smooth = smooth_and_interp.peak_smooth(self.energy, 30, 3)
-            #self.energy_smooth = self.energy
         raw_pitch = None
+
         if self.fUpdate['f0']:
             self.ax[1].cla()
             self.pitch = None
             raw_pitch = None
+
             # if f0 file is provided, use that
             if self.bUseExistingF0.isChecked():
                 raw_pitch = f0_processing.read_f0(self.cur_wav)
@@ -710,21 +685,18 @@ class SigWindow(QtWidgets.QDialog):
                 min_f0 = float(str(self.min_f0.text()))
                 max_f0 = float(str(self.max_f0.text()))
                 max_f0 = np.max([max_f0, 10.])
-                min_f0 = np.min([max_f0-1., min_f0]) 
+                min_f0 = np.min([max_f0-1., min_f0])
 
-                #raw_pitch2 = f0_processing.extract_f0(self.cur_wav, self.sig, self.orig_sr, min_f0, max_f0)
-                (raw_pitch, pic) = pitch_tracker.inst_freq_pitch(self.cur_wav,min_f0, max_f0, float(self.harmonics.value()),float(self.voicing.value()))
-                # fix errors, smooth and interpolate
+                (raw_pitch, pic) = pitch_tracker.inst_freq_pitch(self.cur_wav, min_f0, max_f0, float(self.harmonics.value()), float(self.voicing.value()))
+                # FIXME: fix errors, smooth and interpolate
             try:
                 self.pitch = f0_processing.process(raw_pitch)
             except:
                 # f0_processing.process crashes if raw_pitch is all zeros, kludge
                 self.pitch = raw_pitch
-            #self.pitch2 = f0_processing.process(raw_pitch2)
-            #self.ax[1].plot(raw_pitch2,color='red', linewidth=1)
-            #self.ax[1].plot(self.pitch2,color='red', linewidth=2)
-            self.ax[1].plot(raw_pitch,color='black', linewidth=1)
-            self.ax[1].plot(self.pitch,color='black', linewidth=2)
+
+            self.ax[1].plot(raw_pitch, color='black', linewidth=1)
+            self.ax[1].plot(self.pitch, color='black', linewidth=2)
             self.ax[1].set_ylim(np.min(self.pitch)*0.75, np.max(self.pitch)*1.2)
 
 
@@ -734,7 +706,7 @@ class SigWindow(QtWidgets.QDialog):
 
             # signal method for speech rate, quite shaky
             if self.signalRate.isChecked():
-                self.rate = duration_processing.get_rate(self.energy) #, fig=self.ax[2])
+                self.rate = duration_processing.get_rate(self.energy)
                 self.rate = smooth_and_interp.smooth(self.rate, 30)
 
             # word / syllable / segment duration from labels
@@ -749,53 +721,46 @@ class SigWindow(QtWidgets.QDialog):
                     self.rate = np.zeros(len(self.pitch))
 
             if self.diffDur.isChecked():
-                self.rate = np.diff(self.rate,1)
+                self.rate = np.diff(self.rate, 1)
 
             try:
                 self.rate = np.pad(self.rate, (0,len(self.pitch)-len(self.rate)), 'edge')
             except:
                 self.rate = self.rate[0:len(self.pitch)]
 
-
         # combine acoustic features by normalizing, fixing lengths and summing (or multiplying)
-        if self.fUpdate['params'] ==True:
+        if self.fUpdate['params'] == True:
             self.ax[2].cla()
             self.ax[3].cla()
+
             self.ax[2].plot(misc.normalize_std(self.pitch)+12, label="F0")
             self.ax[2].plot(misc.normalize_std(self.energy_smooth)+8, label="Energy")
-            #self.ax[2].plot(misc.normalize_std(self.energy)+8, label="Energy")
             self.ax[2].plot(misc.normalize_std(self.rate)+4, label="Duration")
-
 
             self.energy_smooth = self.energy_smooth[:np.min([len(self.pitch), len(self.energy_smooth)])]
             self.pitch = self.pitch[:np.min([len(self.pitch), len(self.energy_smooth)])]
             self.rate = self.rate[:np.min([len(self.pitch), len(self.rate)])]
 
-
             if self.mul_feats.isChecked():
-
                 pitch = np.ones(len(self.pitch))
                 energy = np.ones(len(self.pitch))
-                duration =  np.ones(len(self.pitch))
-                if self.get_float_val(self.wF0) > 0:
+                duration = np.ones(len(self.pitch))
 
-                    pitch = misc.normalize_minmax(self.pitch)+self.get_float_val(self.wF0)
-                if self.get_float_val(self.wEnergy)> 0:
-                    energy = misc.normalize_minmax(self.energy_smooth)+self.get_float_val(self.wEnergy)
-                if self.get_float_val(self.wDuration)>0:
-                    duration = misc.normalize_minmax(self.rate)+self.get_float_val(self.wDuration)
+                if self.get_float_val(self.wF0) > 0:
+                    pitch = misc.normalize_minmax(self.pitch) + self.get_float_val(self.wF0)
+                if self.get_float_val(self.wEnergy) > 0:
+                    energy = misc.normalize_minmax(self.energy_smooth) + self.get_float_val(self.wEnergy)
+                if self.get_float_val(self.wDuration) > 0:
+                    duration = misc.normalize_minmax(self.rate) + self.get_float_val(self.wDuration)
 
                 params = pitch * energy * duration
-
-
             else:
-                params = misc.normalize_std(self.pitch)*float(self.wF0.text()) + \
-                         misc.normalize_std(self.energy_smooth)*float(self.wEnergy.text()) + \
-                         misc.normalize_std(self.rate)*float(self.wDuration.text())
-            #params = smooth_and_interp.remove_bias(params, 800)
-            self.params = misc.normalize_std(params)
-            self.ax[2].plot(params,color="black", linewidth=2, label="Combined")
+                params = misc.normalize_std(self.pitch) * float(self.wF0.text()) + \
+                         misc.normalize_std(self.energy_smooth) * float(self.wEnergy.text()) + \
+                         misc.normalize_std(self.rate) * float(self.wDuration.text())
 
+            self.params = misc.normalize_std(params)
+            self.ax[2].plot(params, color="black", linewidth=2, label="Combined")
 
         try:
             labels = self.tiers[unicode(self.tierlist.currentText())]
@@ -806,18 +771,18 @@ class SigWindow(QtWidgets.QDialog):
             self.ax[3].cla()
 
         # do wavelet analysis
-        #n_scales = 22
         n_scales = 40
         scale_dist = 0.25
+
         if self.fUpdate['cwt']:
             self.logger.debug("wavelet transform...")
 
             self.fEnergy = False
             if not self.fEnergy:
-                (self.cwt,self.scales) = cwt_utils.cwt_analysis(self.params, mother_name="mexican_hat",period=2,num_scales=n_scales, scale_distance=scale_dist,apply_coi=True)
+                (self.cwt, self.scales) = cwt_utils.cwt_analysis(self.params, mother_name="mexican_hat", period=2, num_scales=n_scales, scale_distance=scale_dist, apply_coi=True)
                 self.cwt = np.real(self.cwt)
             else:
-                (self.cwt,self.scales) = cwt_utils.cwt_analysis(params, mother_name="morlet",period=5,num_scales=n_scales, scale_distance=scale_dist,apply_coi=False)
+                (self.cwt, self.scales) = cwt_utils.cwt_analysis(params, mother_name="morlet", period=5, num_scales=n_scales, scale_distance=scale_dist, apply_coi=False)
                 self.cwt = np.abs(self.cwt)
             #self.cwt = np.real(self.cwt)
 
@@ -827,8 +792,7 @@ class SigWindow(QtWidgets.QDialog):
 
         if self.fUpdate['tiers'] or self.fUpdate['cwt']:
             import matplotlib.colors as colors
-            self.ax[-1].contourf(np.real(self.cwt),100,  norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05,vmin=-1.0, vmax=1.0), cmap="jet")
-            #self.ax[-1].contourf(self.cwt,100,  norm=colors.SymLogNorm(linthresh=0.03, linscale=0.03,vmin=-0.5, vmax=0.5), cmap="jet")
+            self.ax[-1].contourf(np.real(self.cwt),100, norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05,vmin=-1.0, vmax=1.0), cmap="jet")
 
         # calculate lines of maximum and minimum amplitude
         if self.fUpdate['loma'] and labels:
@@ -845,7 +809,6 @@ class SigWindow(QtWidgets.QDialog):
 
 
             # NOTE: scale numbers are somewhat arbitrary, should be possible to define by user
-
             pos_loma_start_scale = unit_scale - int(3./scale_dist) # three octaves down from average unit length
             pos_loma_end_scale = unit_scale
             neg_loma_start_scale = unit_scale - int(3./scale_dist)  # two octaves down
@@ -857,21 +820,16 @@ class SigWindow(QtWidgets.QDialog):
             pos_loma_end_scale = np.min([n_scales, pos_loma_end_scale])
             neg_loma_end_scale = np.min([n_scales, neg_loma_end_scale])
 
-            pos_loma = loma.get_loma(np.real(self.cwt),self.scales,pos_loma_start_scale,pos_loma_end_scale) #,fig=self.ax[-1],color="black") #self.ax[2])
+            pos_loma = loma.get_loma(np.real(self.cwt), self.scales, pos_loma_start_scale, pos_loma_end_scale) #,fig=self.ax[-1],color="black") #self.ax[2])
             loma.plot_loma(pos_loma, self.ax[-1], color="black")
-            neg_loma = loma.get_loma(-np.real(self.cwt),self.scales,neg_loma_start_scale,neg_loma_end_scale) #,fig=self.ax[-1],color="white") #self.ax[2])
+            neg_loma = loma.get_loma(-np.real(self.cwt), self.scales, neg_loma_start_scale, neg_loma_end_scale) #,fig=self.ax[-1],color="white") #self.ax[2])
             loma.plot_loma(neg_loma, self.ax[-1], color="white")
 
 
             if labels:
-                #max_loma= loma.get_max_per_label(pos_loma, labels)
-
-                #max_loma_vals = np.array(max_loma)[:,1]
                 max_loma = loma.get_prominences(pos_loma, labels)
-
-                self.prominences=np.array(max_loma)
-                #self.boundaries=np.array(loma._get_boundaries(max_loma, neg_loma, labels))
-                self.boundaries=np.array(loma.get_boundaries(max_loma, neg_loma, labels))
+                self.prominences = np.array(max_loma)
+                self.boundaries = np.array(loma.get_boundaries(max_loma, neg_loma, labels))
 
             self.fUpdate['tiers'] = True
 
@@ -883,11 +841,7 @@ class SigWindow(QtWidgets.QDialog):
             lab.plot_labels(labels,ypos=1, fig=self.ax[-1],size=5, prominences=text_prominence, boundary=True)
 
             for i in range(0,len(labels)):
-
                 self.ax[-1].axvline(x=labels[i][1], color='black',linestyle="-",linewidth=self.boundaries[i][-1]*4,alpha=0.3)
-                #self.ax[-1].axvline(x=labels[i][1], color='black',linestyle="-",linewidth=self.boundaries[i]*4,alpha=0.3)
-                #self.ax[-1].axvline(x=self.boundaries[i][0], color='white',linestyle="-",linewidth=self.boundaries[i][-1]*4,alpha=0.3)
-                #self.ax[-1].axvline(x=self.prominences[i][0], color='black',linestyle="-",linewidth=self.prominences[i][-1]*4,alpha=0.3)
 
         #
         # save analyses
@@ -897,8 +851,6 @@ class SigWindow(QtWidgets.QDialog):
             pass
             loma.save_analyses(os.path.splitext(unicode(self.cur_wav))[0]+".prom",labels, self.prominences, self.boundaries,PLOT_SR)
 
-
-        #self.canvas.figure.subplots_adjust(wspace=None,hspace=None)
         self.ax[-1].set_ylim(0,n_scales)
         self.ax[-1].set_xlim(0,len(self.params))
         self.ax[0].set_ylabel("Spec (Hz)")
@@ -925,8 +877,6 @@ class SigWindow(QtWidgets.QDialog):
         self.canvas.draw()
         self.canvas.show()
 
-
-
         self.fUpdate = dict.fromkeys(self.fUpdate, False)
 
 
@@ -942,11 +892,6 @@ def main():
         # Add options
         parser.add_argument("-v", "--verbosity", action="count", default=0,
                             help="increase output verbosity")
-
-        # Add arguments
-        # Example : parser.add_argument("echo", help="description")
-        # TODO
-
         # Parsing arguments
         args = parser.parse_args()
 
