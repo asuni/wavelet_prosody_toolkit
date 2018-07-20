@@ -63,6 +63,7 @@ try:
 except NameError:
     unicode = str
 
+import traceback
 
 # Analysis sample rate
 ANALYSIS_SR = 8000.0
@@ -70,9 +71,54 @@ ANALYSIS_SR = 8000.0
 # Plot sample rate
 PLOT_SR = 200.0
 
+
+###############################################################################
+## Logging
+###############################################################################
 # List of logging levels used to setup everything using verbose option
 LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
+
+class QtHandler(logging.Handler):
+    def __init__(self):
+        logging.Handler.__init__(self)
+        self.qedit = None
+
+    def emit(self, record):
+        if self.qedit is not None:
+            color = "black"
+            if record.levelno == logging.ERROR:
+                color = "red"
+            elif record.levelno == logging.WARNING:
+                color = "orange"
+            elif record.levelno == logging.DEBUG:
+                color = "blue"
+
+            record = self.format(record)
+            self.qedit.appendHtml("<font color=\"%s\">%s</font>\n" % (color, str(record)))
+
+
+HANDLER = QtHandler()
+HANDLER.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+
+
+def exception_log(logger, head_msg, ex, level=logging.ERROR):
+    """Helper to dump exception in the logger
+
+    Parameters
+    ----------
+    logger: logging.logger
+        the logger
+    head_msg: string
+        a human friendly message to prefix the exception stacktrace
+    ex: Exception
+        the exception
+    level: type
+        The wanted level (ERROR by default)
+
+    """
+    logger.log(level, "%s:" % head_msg)
+    logger.log(level, "<br />".join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
 
 ###############################################################################
 ## Callbacks
@@ -255,12 +301,27 @@ class SigWindow(QtWidgets.QDialog):
         right_layout.addWidget(self.bPlay)
 
         ##########################################
-        # Finalize the window layout
+        # Finalize the main part layout
         ##########################################
-        layout = QtWidgets.QHBoxLayout()
-        layout.addLayout(left_layout, 3)
-        layout.addLayout(right_layout, 1)
-        self.setLayout(layout)
+        main_layout = QtWidgets.QHBoxLayout()
+        main_layout.addLayout(left_layout, 3)
+        main_layout.addLayout(right_layout, 1)
+
+        ##########################################
+        # Define the logger layout part
+        ##########################################
+        self.tLogger = QtWidgets.QPlainTextEdit(self)
+        logger_layout = QtWidgets.QHBoxLayout()
+        logger_layout.addWidget(self.tLogger)
+        HANDLER.qedit = self.tLogger
+
+        ##########################################
+        # Finalize the main part layout
+        ##########################################
+        final_layout = QtWidgets.QVBoxLayout()
+        final_layout.addLayout(main_layout, 4)
+        final_layout.addLayout(logger_layout, 1)
+        self.setLayout(final_layout)
 
     def setF0Limits(self):
         """Setup the F0 limits area
@@ -455,8 +516,8 @@ class SigWindow(QtWidgets.QDialog):
         if os.path.exists(lab_f):
             try:
                 self.tiers = lab.read_htk_label(lab_f)
-            except Exception:
-                pass
+            except Exception as ex:
+                exception_log(self.logger, "couldn't parse %s" % lab_f, ex, logging.DEBUG)
 
         if not self.tiers:
             grid = os.path.splitext(unicode(self.cur_wav))[0]+".TextGrid"
@@ -488,7 +549,8 @@ class SigWindow(QtWidgets.QDialog):
             try:
                 self.signalTiers.setCurrentIndex(0)
                 self.tierlist.setCurrentIndex(0)
-            except Exception:
+            except Exception as ex:
+                exception_log(self.logger, "Coudln't defined selected tiers", ex, logging.DEBUG)
                 pass
 
         if len(self.current_dur_tiers) == 0:
@@ -646,9 +708,9 @@ class SigWindow(QtWidgets.QDialog):
         # FIXME: QSound.play used to fail silently on some systems
         try:
             QtMultimedia.QSound.play(fname)
-        except Exception:
-            self.logger.debug("Qsound does not play")
-            os.system("play "+fname)
+        except Exception as ex:
+            exception_log(self.logger, "Qsound does not play (use play command instead)", ex, logging.DEBUG)
+            os.system("play " + fname)
 
     def get_float_val(self, qt_obj):
         return float(qt_obj.text())
@@ -711,8 +773,8 @@ class SigWindow(QtWidgets.QDialog):
                 if self.configuration["pitch_tracker"] == "REAPER":
                     try:
                         raw_pitch = f0_processing.extract_f0(self.cur_wav, self.sig, self.orig_sr, min_f0, max_f0)
-                    except Exception:
-                        self.logger.warn("REAPER not available, reverting to instantenous frequency pitch tracker.")
+                    except Exception as ex:
+                        exception_log(self.logger, "REAPER not available, reverting to instantenous frequency pitch tracker", ex, logging.WARNING)
                         pass
 
                 if self.configuration["pitch_tracker"] == "inst_freq" or raw_pitch is None:
@@ -723,7 +785,8 @@ class SigWindow(QtWidgets.QDialog):
             # FIXME: fix errors, smooth and interpolate
             try:
                 self.pitch = f0_processing.process(raw_pitch)
-            except Exception:
+            except Exception as ex:
+                exception_log(self.logger, "no idea!!!", ex, logging.DEBUG)  # FIXME: more human friendly message
                 # f0_processing.process crashes if raw_pitch is all zeros, kludge
                 self.pitch = raw_pitch
 
@@ -748,8 +811,7 @@ class SigWindow(QtWidgets.QDialog):
                 try:
                     self.rate = duration_processing.get_duration_signal(sig_tiers, sil_symbols=self.configuration["silence_symbols"])
                 except Exception as ex:
-                    self.logger.error("Duration signal construction failed.")
-                    self.logger.error(ex)
+                    exception_log(self.logger, "Duration signal construction failed", ex, logging.ERROR)
                     self.rate = np.zeros(len(self.pitch))
 
             if self.diffDur.isChecked():
@@ -950,11 +1012,14 @@ def main():
             log_level = len(LEVEL) - 1
         logging.basicConfig(level=LEVEL[log_level])
 
+        global_logger = logging.getLogger()
+        global_logger.addHandler(HANDLER)
+
         # Load configuration (FIXME: yaml hardcoded! )
         configuration = None
         try:
             with open(args.config, 'r') as f:
-                configuration = defaultdict(lambda:False, yaml.load(f))
+                configuration = defaultdict(lambda: False, yaml.load(f))
         except IOError as ex:
             logging.error("configuration file " + args.config + " could not be loaded:")
             logging.error(ex.msg)
@@ -969,7 +1034,6 @@ def main():
 
         if not app:
             app = QtWidgets.QApplication(sys.argv)
-
 
         main = SigWindow(configuration)
 
@@ -998,5 +1062,3 @@ def main():
 ###############################################################################
 if __name__ == '__main__':
     main()
-
-# wavelet_gui.py ends here
