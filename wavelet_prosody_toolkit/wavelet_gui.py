@@ -18,6 +18,8 @@ import argparse
 import time
 import logging
 
+import yaml
+
 # QT related imports
 from PyQt5 import QtCore, QtWidgets, QtMultimedia
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -25,9 +27,9 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 # Plotting configuration
 from matplotlib.ticker import MaxNLocator
-from matplotlib.figure import Figure
+# from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+# import matplotlib.gridspec as gridspec
 import matplotlib.ticker as ticker
 
 # Numpy
@@ -50,7 +52,10 @@ from wavelet_prosody_toolkit.prosody_tools import misc, smooth_and_interp, pitch
 from wavelet_prosody_toolkit.prosody_tools import cwt_utils, loma, lab
 
 # Globbing
-import os,glob
+import glob
+
+# Collections
+from collections import defaultdict
 
 # Python 3 compatibility hack
 try:
@@ -112,7 +117,7 @@ class SigWindow(QtWidgets.QDialog):
     """Main window class
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, configuration, parent=None):
         """Initialisation method for the new created window
 
         Parameters
@@ -131,6 +136,7 @@ class SigWindow(QtWidgets.QDialog):
         ##########################################
         # Define internal variables
         ##########################################
+        self.configuration = configuration
         self.dir = '.'
         self.wav_files = []
         self.cur_wav = None
@@ -142,7 +148,7 @@ class SigWindow(QtWidgets.QDialog):
         self.fUpdate = {}
         for f in ['wav', 'energy', 'f0', 'duration', 'params', 'tiers', 'cwt', 'loma']:
             self.fUpdate[f] = True
-        self.fProcessAll=False
+        self.fProcessAll = False
         self.fUsePrecalcF0 = True
 
         self.current_tier = ""
@@ -272,19 +278,19 @@ class SigWindow(QtWidgets.QDialog):
 
         # Min F0
         self.min_f0 = QtWidgets.QLineEdit("min F0")
-        self.min_f0.setText("50")
+        self.min_f0.setText(str(self.configuration["min_f0"]))
         self.min_f0.setInputMask("000")
         self.min_f0.textChanged.connect(self.onF0Changed)
 
         # Max F0
         self.max_f0 = QtWidgets.QLineEdit("min F0")
-        self.max_f0.setText("400")
+        self.max_f0.setText(str(self.configuration["max_f0"]))
         self.max_f0.setInputMask("000")
         self.max_f0.textChanged.connect(self.onF0Changed)
 
         # Voicing
         self.voicing = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.voicing.setSliderPosition(50)
+        self.voicing.setSliderPosition(self.configuration["voicing_threshold"])
         self.voicing.valueChanged.connect(self.onF0Changed)
 
         # Harmonics
@@ -300,7 +306,7 @@ class SigWindow(QtWidgets.QDialog):
         hbox.addWidget(self.voicing)
         # hbox.addWidget(self.harmonics)
 
-        groupBox = QtWidgets.QGroupBox("minF0, maxF0, voicing threshold")  #, harmonics")
+        groupBox = QtWidgets.QGroupBox("minF0, maxF0, voicing threshold")  # , harmonics")
         # groupBox.setMaximumSize(200,200)
         groupBox.setLayout(hbox)
         groupBox.setToolTip("min and max Hz of the speaker's f0 range, voicing threshold")
@@ -325,19 +331,19 @@ class SigWindow(QtWidgets.QDialog):
 
         # F0 widgets
         l1 = QtWidgets.QLabel("F0")
-        self.wF0 = QtWidgets.QLineEdit("1.0")
+        self.wF0 = QtWidgets.QLineEdit(str(self.configuration["weights"]["f0"]))
         self.wF0.setInputMask("0.0")
         self.wF0.setMaxLength(3)
 
         # Energy widgets
         l2 = QtWidgets.QLabel("Energy")
-        self.wEnergy = QtWidgets.QLineEdit("1.0")
+        self.wEnergy = QtWidgets.QLineEdit(str(self.configuration["weights"]["energy"]))
         self.wEnergy.setInputMask("0.0")
         self.wEnergy.setMaxLength(3)
 
         # Duration widgets
         l3 = QtWidgets.QLabel("Duration")
-        self.wDuration = QtWidgets.QLineEdit("1.0")
+        self.wDuration = QtWidgets.QLineEdit(str(self.configuration["weights"]["duration"]))
         self.wDuration.setInputMask("0.0")
         self.wDuration.setMaxLength(3)
 
@@ -375,12 +381,13 @@ class SigWindow(QtWidgets.QDialog):
 
         # Signal rate
         self.signalRate = QtWidgets.QCheckBox("Estimate speech rate from signal")
-        self.signalRate.setChecked(False)
+        self.signalRate.setChecked(self.configuration["acoustic_estimation"])
         self.signalRate.clicked.connect(self.onSignalRate)
 
         # Delta
         self.diffDur = QtWidgets.QCheckBox("Use delta-duration")
         self.diffDur.setToolTip("Point-wise difference of the durations signal, empirically found to improve boundary detection in some cases")
+        self.diffDur.setChecked(self.configuration["delta_duration"])
         self.diffDur.clicked.connect(self.onSignalRate)
 
         # Setup the group box
@@ -391,7 +398,8 @@ class SigWindow(QtWidgets.QDialog):
         groupBox = QtWidgets.QGroupBox("Tier(s) for Duration Signal")
         groupBox.setMaximumSize(400, 150)  # FIXME: see for not having hardcoded size
         groupBox.setLayout(box)
-        groupBox.setToolTip("Generate duration signal from a tier or as a sum of two or more tiers.\nShift-click to multi-select, Ctrl-click to de-select")
+        groupBox.setToolTip("Generate duration signal from a tier or as a sum of two or more tiers.\n" +
+                            "Shift-click to multi-select, Ctrl-click to de-select")
 
         return groupBox
 
@@ -411,11 +419,16 @@ class SigWindow(QtWidgets.QDialog):
 
         groupBox = QtWidgets.QGroupBox("Feature Combination Method")
 
-        combination_method = QtWidgets.QButtonGroup() # Number group
+        combination_method = QtWidgets.QButtonGroup()  # Number group
 
         self.sum_feats = QtWidgets.QRadioButton("sum")
         self.mul_feats = QtWidgets.QRadioButton("product")
-        self.sum_feats.setChecked(True)
+
+        if self.configuration["feature_combination"] == "product":
+            self.mul_feats.setChecked(True)
+        else:
+            self.sum_feats.setChecked(True)
+
         combination_method.addButton(self.sum_feats)
         combination_method.addButton(self.mul_feats)
         self.sum_feats.clicked.connect(self.onSignalRate)
@@ -442,7 +455,7 @@ class SigWindow(QtWidgets.QDialog):
         if os.path.exists(lab_f):
             try:
                 self.tiers = lab.read_htk_label(lab_f)
-            except:
+            except Exception:
                 pass
 
         if not self.tiers:
@@ -450,7 +463,7 @@ class SigWindow(QtWidgets.QDialog):
             if os.path.exists(grid):
                 self.tiers = lab.read_textgrid(grid)
             else:
-                self.logger.debug(grid +" not found")
+                self.logger.debug(grid + " not found")
 
         if not self.tiers:
             return
@@ -459,21 +472,27 @@ class SigWindow(QtWidgets.QDialog):
             self.tierlist.addItem(k)
             self.signalTiers.addItem(k)
 
+        if self.current_tier == "":
+            self.current_tier = self.configuration["annotation_tier"]
+
         # activate previously selected tiers
         try:
             index = self.tierlist.findText(self.current_tier, QtCore.Qt.MatchFixedString)
 
-            if index>=0:
+            if index >= 0:
                 self.tierlist.setCurrentIndex(index)
             elif self.current_tier_index >= 0:
                 self.tierlist.setCurrentIndex(self.current_tier_index)
 
-        except:
+        except Exception:
             try:
                 self.signalTiers.setCurrentIndex(0)
                 self.tierlist.setCurrentIndex(0)
-            except:
+            except Exception:
                 pass
+
+        if len(self.current_dur_tiers) == 0:
+            self.current_dur_tiers = self.configuration["duration_tiers"]
 
         if len(self.current_dur_tiers) > 0:
             for i in range(0, len(self.current_dur_tiers)):
@@ -529,7 +548,6 @@ class SigWindow(QtWidgets.QDialog):
         self.status.showMessage("Wavelet Prosody Analyzer | processing " + curr.text() + "...")
         self.populateTierList()
 
-        time.sleep(0.05)
         QtWidgets.qApp.processEvents()
 
         self.fUpdate = dict.fromkeys(self.fUpdate, True)
@@ -576,12 +594,10 @@ class SigWindow(QtWidgets.QDialog):
             feats = [unicode(self.filelist.currentItem().text())]
             self.prominences = np.array_str(self.prominences[:, 1], precision=3)
             for p in self.prominences:
-                feats.append("%0.5f" %p[1])
+                feats.append("%0.5f" % p[1])
 
             results.append(feats)
             self.logger.debug(feats)
-            # time.sleep(0.05)  # FIXME: why sleeping?
-
 
         self.logger.debug("writing results to " + self.dir + "/results.txt")
         with open(self.dir + "/results.txt", 'w') as res_file:
@@ -596,12 +612,12 @@ class SigWindow(QtWidgets.QDialog):
     def dirDialog(self):
 
         dirname = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', self.dir))
-        self.wav_files = glob.glob(dirname+'/*.wav') #[Wv][Aa][Wv]') #(WAV)|(wav)')
+        self.wav_files = glob.glob(dirname+'/*.wav')
         self.dir = dirname
         self.filelist.clear()
 
         for i in range(len(self.wav_files)):
-            self.filelist.addItem(os.path.basename(self.wav_files[i])) #'Item %s' % (i + 1))
+            self.filelist.addItem(os.path.basename(self.wav_files[i]))
 
         if len(self.wav_files) > 0:
             self.status.showMessage("processing " + self.wav_files[i])
@@ -609,7 +625,7 @@ class SigWindow(QtWidgets.QDialog):
             self.filelist.setCurrentRow(0)
 
     def play(self):
-        # todo: find python method for this,
+        # TODO: find python method for this,
         # sox usage for windows probably difficult . done
 
         import tempfile
@@ -627,12 +643,10 @@ class SigWindow(QtWidgets.QDialog):
         fname = tempfile.mkstemp()[1]
         misc.write_wav(fname, wav_slice, self.orig_sr)
 
-
-        # NOTE: QSound.play used to fail silently on some systems
-
+        # FIXME: QSound.play used to fail silently on some systems
         try:
             QtMultimedia.QSound.play(fname)
-        except:
+        except Exception:
             self.logger.debug("Qsound does not play")
             os.system("play "+fname)
 
@@ -661,12 +675,19 @@ class SigWindow(QtWidgets.QDialog):
             self.plot_len = int(len(self.sig) * (PLOT_SR/self.orig_sr))
             self.ax[0].specgram(self.sig, NFFT=200, noverlap=40, Fs=self.orig_sr, xextent=[0, self.plot_len], cmap="jet")
 
-
         if self.fUpdate['energy']:
             # 'energy' is just a smoothed envelope here
             self.logger.debug("analyzing energy..")
-            self.energy = energy_processing.extract_energy(self.sig, self.orig_sr, 300, 5000)
-            self.energy_smooth = smooth_and_interp.peak_smooth(self.energy, 30, 3)
+            self.energy = energy_processing.extract_energy(self.sig, self.orig_sr,
+                                                           self.configuration["energy_band_min"],
+                                                           self.configuration["energy_band_max"],
+                                                           self.configuration["energy_calculation_method"])
+
+            if self.configuration["smooth_energy"]:
+                self.energy_smooth = smooth_and_interp.peak_smooth(self.energy, 30, 3)  # FIXME: 30? 3?
+            else:
+                self.energy_smooth = self.energy
+
         raw_pitch = None
 
         if self.fUpdate['f0']:
@@ -687,19 +708,28 @@ class SigWindow(QtWidgets.QDialog):
                 max_f0 = np.max([max_f0, 10.])
                 min_f0 = np.min([max_f0-1., min_f0])
 
-                (raw_pitch, pic) = pitch_tracker.inst_freq_pitch(self.cur_wav, min_f0, max_f0, float(self.harmonics.value()), float(self.voicing.value()))
-                # FIXME: fix errors, smooth and interpolate
+                if self.configuration["pitch_tracker"] == "REAPER":
+                    try:
+                        raw_pitch = f0_processing.extract_f0(self.cur_wav, self.sig, self.orig_sr, min_f0, max_f0)
+                    except Exception:
+                        self.logger.warn("REAPER not available, reverting to instantenous frequency pitch tracker.")
+                        pass
+
+                if self.configuration["pitch_tracker"] == "inst_freq" or raw_pitch is None:
+                    (raw_pitch, pic) = pitch_tracker.inst_freq_pitch(self.cur_wav, min_f0, max_f0,
+                                                                     float(self.harmonics.value()),
+                                                                     float(self.voicing.value()))
+
+            # FIXME: fix errors, smooth and interpolate
             try:
                 self.pitch = f0_processing.process(raw_pitch)
-            except:
+            except Exception:
                 # f0_processing.process crashes if raw_pitch is all zeros, kludge
                 self.pitch = raw_pitch
 
             self.ax[1].plot(raw_pitch, color='black', linewidth=1)
             self.ax[1].plot(self.pitch, color='black', linewidth=2)
             self.ax[1].set_ylim(np.min(self.pitch)*0.75, np.max(self.pitch)*1.2)
-
-
 
         if self.fUpdate['duration']:
             self.logger.debug("analyzing duration...")
@@ -716,20 +746,22 @@ class SigWindow(QtWidgets.QDialog):
                     sig_tiers.append(self.tiers[item.text()])
 
                 try:
-                    self.rate = duration_processing.get_duration_signal(sig_tiers)
-                except:
+                    self.rate = duration_processing.get_duration_signal(sig_tiers, sil_symbols=self.configuration["silence_symbols"])
+                except Exception as ex:
+                    self.logger.error("Duration signal construction failed.")
+                    self.logger.error(ex)
                     self.rate = np.zeros(len(self.pitch))
 
             if self.diffDur.isChecked():
                 self.rate = np.diff(self.rate, 1)
 
             try:
-                self.rate = np.pad(self.rate, (0,len(self.pitch)-len(self.rate)), 'edge')
-            except:
+                self.rate = np.pad(self.rate, (0, len(self.pitch)-len(self.rate)), 'edge')
+            except Exception:
                 self.rate = self.rate[0:len(self.pitch)]
 
         # combine acoustic features by normalizing, fixing lengths and summing (or multiplying)
-        if self.fUpdate['params'] == True:
+        if self.fUpdate['params']:
             self.ax[2].cla()
             self.ax[3].cla()
 
@@ -759,12 +791,15 @@ class SigWindow(QtWidgets.QDialog):
                          misc.normalize_std(self.energy_smooth) * float(self.wEnergy.text()) + \
                          misc.normalize_std(self.rate) * float(self.wDuration.text())
 
+            if self.configuration["detrend"]:
+                params = smooth_and_interp.remove_bias(params, 800)  # FIXME: 800?
+
             self.params = misc.normalize_std(params)
             self.ax[2].plot(params, color="black", linewidth=2, label="Combined")
 
         try:
             labels = self.tiers[unicode(self.tierlist.currentText())]
-        except:
+        except Exception:
             labels = None
 
         if self.fUpdate['tiers']:
@@ -777,54 +812,57 @@ class SigWindow(QtWidgets.QDialog):
         if self.fUpdate['cwt']:
             self.logger.debug("wavelet transform...")
 
-            self.fEnergy = False
-            if not self.fEnergy:
-                (self.cwt, self.scales) = cwt_utils.cwt_analysis(self.params, mother_name="mexican_hat", period=2, num_scales=n_scales, scale_distance=scale_dist, apply_coi=True)
-                self.cwt = np.real(self.cwt)
+            (self.cwt, self.scales) = cwt_utils.cwt_analysis(self.params,
+                                                             mother_name=self.configuration["mother_wavelet"],
+                                                             period=self.configuration["period"],
+                                                             num_scales=self.configuration["num_scales"],
+                                                             scale_distance=self.configuration["scale_distance"],
+                                                             apply_coi=True)
+            if self.configuration["magnitude"]:
+                self.cwt = np.log(np.abs(self.cwt)+1.)
             else:
-                (self.cwt, self.scales) = cwt_utils.cwt_analysis(params, mother_name="morlet", period=5, num_scales=n_scales, scale_distance=scale_dist, apply_coi=False)
-                self.cwt = np.abs(self.cwt)
-            #self.cwt = np.real(self.cwt)
+                self.cwt = np.real(self.cwt)
 
-
-            self.scales*=PLOT_SR
+            self.scales *= PLOT_SR
             self.fUpdate['loma'] = True
 
         if self.fUpdate['tiers'] or self.fUpdate['cwt']:
             import matplotlib.colors as colors
-            self.ax[-1].contourf(np.real(self.cwt),100, norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05,vmin=-1.0, vmax=1.0), cmap="jet")
+            self.ax[-1].contourf(np.real(self.cwt), 100,
+                                 norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05, vmin=-1.0, vmax=1.0),
+                                 cmap="jet")
 
         # calculate lines of maximum and minimum amplitude
         if self.fUpdate['loma'] and labels:
             self.logger.debug("lines of maximum amplitude...")
+            n_scales = self.configuration["num_scales"]
+            scale_dist = self.configuration["scale_distance"]
 
             # get scale corresponding to avg unit length of selected tier
             unit_scale = misc.get_best_scale2(self.scales, labels)
 
-            unit_scale = np.max([8,unit_scale])
+            unit_scale = np.max([8, unit_scale])
             unit_scale = np.min([n_scales-2, unit_scale])
             labdur = []
             for l in labels:
                 labdur.append(l[1]-l[0])
 
+            # Define the scale information (FIXME: description)
+            pos_loma_start_scale = unit_scale + int(self.configuration["prom_loma_start"]/scale_dist)  # three octaves down from average unit length
+            pos_loma_end_scale = unit_scale + int(self.configuration["prom_loma_end"]/scale_dist)
+            neg_loma_start_scale = unit_scale + int(self.configuration["boundary_loma_start"]/scale_dist)  # two octaves down
+            neg_loma_end_scale = unit_scale + int(self.configuration["boundary_loma_end"]/scale_dist)  # one octave up
 
-            # NOTE: scale numbers are somewhat arbitrary, should be possible to define by user
-            pos_loma_start_scale = unit_scale - int(3./scale_dist) # three octaves down from average unit length
-            pos_loma_end_scale = unit_scale
-            neg_loma_start_scale = unit_scale - int(3./scale_dist)  # two octaves down
-            neg_loma_end_scale = unit_scale + int(1./scale_dist)  # one octave up
-
-            #some bug if starting from 0-3 scales
+            # some bug if starting from 0-3 scales
             pos_loma_start_scale = np.max([4, pos_loma_start_scale])
             neg_loma_start_scale = np.max([4, neg_loma_start_scale])
             pos_loma_end_scale = np.min([n_scales, pos_loma_end_scale])
             neg_loma_end_scale = np.min([n_scales, neg_loma_end_scale])
 
-            pos_loma = loma.get_loma(np.real(self.cwt), self.scales, pos_loma_start_scale, pos_loma_end_scale) #,fig=self.ax[-1],color="black") #self.ax[2])
+            pos_loma = loma.get_loma(np.real(self.cwt), self.scales, pos_loma_start_scale, pos_loma_end_scale)
             loma.plot_loma(pos_loma, self.ax[-1], color="black")
-            neg_loma = loma.get_loma(-np.real(self.cwt), self.scales, neg_loma_start_scale, neg_loma_end_scale) #,fig=self.ax[-1],color="white") #self.ax[2])
+            neg_loma = loma.get_loma(-np.real(self.cwt), self.scales, neg_loma_start_scale, neg_loma_end_scale)
             loma.plot_loma(neg_loma, self.ax[-1], color="white")
-
 
             if labels:
                 max_loma = loma.get_prominences(pos_loma, labels)
@@ -836,20 +874,24 @@ class SigWindow(QtWidgets.QDialog):
         # plot labels
         if self.fUpdate['tiers'] and labels:
             labels = self.tiers[unicode(self.tierlist.currentText())]
-            text_prominence = self.prominences[:,1]/(np.max(self.prominences[:,1]))*2.5+0.5
+            text_prominence = self.prominences[:, 1]/(np.max(self.prominences[:, 1]))*2.5 + 0.5
 
-            lab.plot_labels(labels,ypos=1, fig=self.ax[-1],size=5, prominences=text_prominence, boundary=True)
+            lab.plot_labels(labels, ypos=1, fig=self.ax[-1],
+                            size=5, prominences=text_prominence, boundary=True)
 
-            for i in range(0,len(labels)):
-                self.ax[-1].axvline(x=labels[i][1], color='black',linestyle="-",linewidth=self.boundaries[i][-1]*4,alpha=0.3)
+            for i in range(0, len(labels)):
+                self.ax[-1].axvline(x=labels[i][1], color='black',
+                                    linestyle="-", linewidth=self.boundaries[i][-1] * 4,
+                                    alpha=0.3)
 
         #
         # save analyses
-        #
-        #
         if labels:
-            pass
-            loma.save_analyses(os.path.splitext(unicode(self.cur_wav))[0]+".prom",labels, self.prominences, self.boundaries,PLOT_SR)
+            pass  # FIXME: ????
+            loma.save_analyses(os.path.splitext(unicode(self.cur_wav))[0]+".prom",
+                               labels,
+                               self.prominences,
+                               self.boundaries, PLOT_SR)
 
         self.ax[-1].set_ylim(0,n_scales)
         self.ax[-1].set_xlim(0,len(self.params))
@@ -892,6 +934,12 @@ def main():
         # Add options
         parser.add_argument("-v", "--verbosity", action="count", default=0,
                             help="increase output verbosity")
+
+        # Load default configuration
+        root = os.path.dirname(os.path.realpath(sys.argv[0]))
+        parser.add_argument("-c", "--config", default=root+"/configs/default.yaml",
+                            help="configuration file")
+
         # Parsing arguments
         args = parser.parse_args()
 
@@ -901,6 +949,16 @@ def main():
             logging.warning("verbosity level is too high, I'm gonna assume you're taking the highes ")
             log_level = len(LEVEL) - 1
         logging.basicConfig(level=LEVEL[log_level])
+
+        # Load configuration (FIXME: yaml hardcoded! )
+        configuration = None
+        try:
+            with open(args.config, 'r') as f:
+                configuration = defaultdict(lambda:False, yaml.load(f))
+        except IOError as ex:
+            logging.error("configuration file " + args.config + " could not be loaded:")
+            logging.error(ex.msg)
+            sys.exit(1)
 
         # Debug time
         start_time = time.time()
@@ -913,7 +971,7 @@ def main():
             app = QtWidgets.QApplication(sys.argv)
 
 
-        main = SigWindow()
+        main = SigWindow(configuration)
 
         main.show()
 

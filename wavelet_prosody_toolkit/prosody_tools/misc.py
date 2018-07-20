@@ -92,7 +92,7 @@ def match_length(sig_list):
         List of signals which are 1D array of samples.
 
     """
-    length = min(map(len,sig_list))
+    length = min(map(len, sig_list))
 
     for i in range(0, len(sig_list)):
         sig_list[i] = sig_list[i][:int(length)]
