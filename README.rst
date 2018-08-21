@@ -47,11 +47,15 @@ Usage:
 ------
 
 1. Assuming the installation process is done in **global mode**, just do
-.. code::
-   wavelet_gui
 
-   Otherwise, go to the root directory of the program in the terminal, and start by
 .. code:: sh
+
+	  wavelet_gui
+
+Otherwise, go to the root directory of the program in the terminal, and start by
+
+.. code:: sh
+	     
     python3 wavelet_prosody_toolkit/wavelet_gui.py
 
     
