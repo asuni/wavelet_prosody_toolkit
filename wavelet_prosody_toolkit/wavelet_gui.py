@@ -235,7 +235,7 @@ class SigWindow(QtWidgets.QDialog):
         # Setup the status bar
         ##########################################
         self.status = QtWidgets.QStatusBar()
-        self.status.setMaximumSize(800, 30)
+        self.status.setMaximumSize(800, 50)
         self.status.showMessage("Wavelet Prosody Analyzer | to start, find a folder with audio files and associated labels ")
 
         ##########################################
@@ -310,7 +310,9 @@ class SigWindow(QtWidgets.QDialog):
         ##########################################
         # Define the logger layout part
         ##########################################
+
         self.tLogger = QtWidgets.QPlainTextEdit(self)
+        self.tLogger.setMaximumSize(1600,30)
         logger_layout = QtWidgets.QHBoxLayout()
         logger_layout.addWidget(self.tLogger)
         HANDLER.qedit = self.tLogger
@@ -795,6 +797,9 @@ class SigWindow(QtWidgets.QDialog):
             self.ax[1].set_ylim(np.min(self.pitch)*0.75, np.max(self.pitch)*1.2)
 
         if self.fUpdate['duration']:
+            
+            self.rate=np.zeros(len(self.pitch))
+            
             self.logger.debug("analyzing duration...")
 
             # signal method for speech rate, quite shaky
@@ -809,10 +814,12 @@ class SigWindow(QtWidgets.QDialog):
                     sig_tiers.append(self.tiers[item.text()])
 
                 try:
-                    self.rate = duration_processing.get_duration_signal(sig_tiers, sil_symbols=self.configuration["silence_symbols"])
+                    # Only if some tiers are selected
+                    if (len(sig_tiers))>0:
+                        self.rate = duration_processing.get_duration_signal(sig_tiers, sil_symbols=self.configuration["silence_symbols"])
                 except Exception as ex:
                     exception_log(self.logger, "Duration signal construction failed", ex, logging.ERROR)
-                    self.rate = np.zeros(len(self.pitch))
+
 
             if self.diffDur.isChecked():
                 self.rate = np.diff(self.rate, 1)
@@ -840,12 +847,13 @@ class SigWindow(QtWidgets.QDialog):
                 energy = np.ones(len(self.pitch))
                 duration = np.ones(len(self.pitch))
 
-                if self.get_float_val(self.wF0) > 0:
+                if self.get_float_val(self.wF0) > 0 and np.std(self.pitch) > 0:
                     pitch = misc.normalize_minmax(self.pitch) + self.get_float_val(self.wF0)
-                if self.get_float_val(self.wEnergy) > 0:
+                if self.get_float_val(self.wEnergy) > 0 and np.std(self.energy_smooth) > 0:
                     energy = misc.normalize_minmax(self.energy_smooth) + self.get_float_val(self.wEnergy)
-                if self.get_float_val(self.wDuration) > 0:
+                if self.get_float_val(self.wDuration) > 0 and np.std(self.rate)>0:
                     duration = misc.normalize_minmax(self.rate) + self.get_float_val(self.wDuration)
+
 
                 params = pitch * energy * duration
             else:
