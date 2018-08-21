@@ -47,11 +47,14 @@ Usage:
 ------
 
 1. Assuming the installation process is done in **global mode**, just do
+.. code::
+   wavelet_gui
 
+   Otherwise, go to the root directory of the program in the terminal, and start by
 .. code:: sh
+    python3 wavelet_prosody_toolkit/wavelet_gui.py
 
-    wavelet_gui
-
+    
 2. Select directory with speech and transciption files:
    ``Select Speech Directory...``. Some examples are provided in
    ``samples/`` directory. Files should have the same root, for example
@@ -86,11 +89,25 @@ Usage:
 
 9. When everything is good, you can ``Process all`` which analyzes all
    utterances in the directory with the current settings, and saves
-   prosodic labels as .prom
+   prosodic labels in the speech directory as ``<wav_file_name>.prom``
 
 Prosodic labels are saved in a tab separated form with the following
 columns:
 
 .. code::
 
-    <unit_start> <unit_end> <unit> <prominence strength> <prominence_position> <boundary strength>
+    <file_name> <start_time> <end_time> <unit> <prominence strength> <boundary strength>
+
+Advanced Usage:
+--------------
+Additional customization of the input signals and wavelet analysis is possible by modifying the configuration file. The default configuration is located in:
+
+.. code:: sh
+
+	  wavelet_prosody_toolkit/configs/default.yaml
+
+You are recommended to make a copy of the default.yaml file (to e.g. myconfig.yaml), and modify the copy.  To apply the modified configuration, start the program by
+
+.. code:: sh
+
+	  wavelet_gui --config path/to/myconfig.yaml
