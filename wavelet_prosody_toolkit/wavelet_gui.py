@@ -714,9 +714,6 @@ class SigWindow(QtWidgets.QDialog):
             exception_log(self.logger, "Qsound does not play (use play command instead)", ex, logging.DEBUG)
             os.system("play " + fname)
 
-    def get_float_val(self, qt_obj):
-        return float(qt_obj.text())
-
     # main function
     # analysis and plotting of acoustic features and wavelets + loma
     def analysis(self):
@@ -729,6 +726,7 @@ class SigWindow(QtWidgets.QDialog):
             return
 
         self.refresh_updates()
+
         # show spectrogram
         if self.fUpdate['wav']:
             self.toolbar.update()
@@ -797,9 +795,9 @@ class SigWindow(QtWidgets.QDialog):
             self.ax[1].set_ylim(np.min(self.pitch)*0.75, np.max(self.pitch)*1.2)
 
         if self.fUpdate['duration']:
-            
+
             self.rate=np.zeros(len(self.pitch))
-            
+
             self.logger.debug("analyzing duration...")
 
             # signal method for speech rate, quite shaky
@@ -847,12 +845,12 @@ class SigWindow(QtWidgets.QDialog):
                 energy = np.ones(len(self.pitch))
                 duration = np.ones(len(self.pitch))
 
-                if self.get_float_val(self.wF0) > 0 and np.std(self.pitch) > 0:
-                    pitch = misc.normalize_minmax(self.pitch) + self.get_float_val(self.wF0)
-                if self.get_float_val(self.wEnergy) > 0 and np.std(self.energy_smooth) > 0:
-                    energy = misc.normalize_minmax(self.energy_smooth) + self.get_float_val(self.wEnergy)
-                if self.get_float_val(self.wDuration) > 0 and np.std(self.rate)>0:
-                    duration = misc.normalize_minmax(self.rate) + self.get_float_val(self.wDuration)
+                if float(self.wF0.text()) > 0 and np.std(self.pitch) > 0:
+                    pitch = misc.normalize_minmax(self.pitch) + float(self.wF0.text())
+                if float(self.wEnergy.text()) > 0 and np.std(self.energy_smooth) > 0:
+                    energy = misc.normalize_minmax(self.energy_smooth) + float(self.wEnergy.text())
+                if float(self.wDuration.text()) > 0 and np.std(self.rate)>0:
+                    duration = misc.normalize_minmax(self.rate) + float(self.wDuration.text())
 
 
                 params = pitch * energy * duration
