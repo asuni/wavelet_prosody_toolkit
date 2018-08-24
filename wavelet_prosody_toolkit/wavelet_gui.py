@@ -99,7 +99,7 @@ class QtHandler(logging.Handler):
 
 
 HANDLER = QtHandler()
-HANDLER.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+HANDLER.setFormatter(logging.Formatter("%(asctime)s %(name)-12s %(levelname)-8s: %(message)s"))
 
 
 def exception_log(logger, head_msg, ex, level=logging.ERROR):
