@@ -61,7 +61,30 @@ def write_wav(filename, data, sr, format="WAV"):
         The output audio format (Default value is WAV for wav file).
 
     """
+    
     soundfile.write(filename, data, sr, format=format)
+
+
+def resample(waveform, s_sr, t_sr):
+    """resampling for waveforms, should work also with when source and
+    target rate ratio is fractional
+
+    Parameters
+    ----------
+    waveform: np.array
+       speech waveform, mono
+    s_sr: float
+       original sample rate
+    t_sr: float
+       target sample rate
+    
+    returns: resampled waveform as np.array
+    """
+    from scipy.signal import resample_poly
+    import fractions
+    ratio = fractions.Fraction(int(t_sr), int(s_sr))
+    return resample_poly(waveform, ratio.numerator, ratio.denominator)
+    
 
 
 def play(utt):

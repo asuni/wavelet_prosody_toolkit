@@ -40,8 +40,8 @@ def extract_energy(waveform, fs=16000, min_freq=200, max_freq=3000, method='rms'
     elif method == "rms":
         energy=np.sqrt(lp_waveform**2)
     logger.debug("fs = %d, target_rate = %d, fs/target_rate = %f" % (fs, target_rate, fs/target_rate))
-    #scipy complains about too large decimation if done in single step
-    energy = scipy.signal.resample_poly(energy, 1., int(round(fs/target_rate)))
+    energy = misc.resample(energy, fs, target_rate)
+    #energy = scipy.signal.resample_poly(energy, 1., int(round(fs/target_rate)))
     logger.debug("len(energy) = %d, len(energy)/target_rate = %f" % (len(energy), len(energy)/target_rate))
     return energy
 

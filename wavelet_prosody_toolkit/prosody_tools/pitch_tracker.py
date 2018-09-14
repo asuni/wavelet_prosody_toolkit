@@ -122,7 +122,8 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=10., voicing_thr
     (fs, params) = misc.read_wav(utt_wav)    
     
     sample_rate = 4000.0
-    params = scipy.signal.resample_poly(params, 1., int(round(fs/sample_rate)))
+    params = misc.resample(params, fs, sample_rate)
+    #params = scipy.signal.resample_poly(params, 1., int(round(fs/sample_rate)))
     params = misc.normalize_std(params)
 
 
