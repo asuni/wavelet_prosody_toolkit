@@ -2,7 +2,7 @@
 """
 
 
-from numpy import array,concatenate, sqrt, pad, mean, std, real, nan, zeros, nanmean, nanstd, pi
+from numpy import array,concatenate, sqrt, pad, mean, std, real, nan, zeros, nanmean, nanstd, pi, around
 
 import pycwt as cwt
 
@@ -214,9 +214,9 @@ def cwt_analysis(params, mother_name="mexican_hat",num_scales=12, first_scale = 
     wavelet_matrix = _scale_for_reconstruction((wavelet_matrix), scales, dj, dt,mother=mother_name,period=period)
     if apply_coi:
         wavelet_matrix = _zero_outside_coi(wavelet_matrix, scales/dt*0.5)
-
-
-    return (wavelet_matrix,scales)
+    import numpy as np
+    np.set_printoptions(precision=3, suppress=True)
+    return (wavelet_matrix,scales,freqs)
 
 
 def cwt_synthesis(wavelet_matrix, mean = 0):

@@ -880,7 +880,7 @@ class SigWindow(QtWidgets.QDialog):
         if self.fUpdate['cwt']:
             self.logger.debug("wavelet transform...")
 
-            (self.cwt, self.scales) = cwt_utils.cwt_analysis(self.params,
+            (self.cwt, self.scales, self.freqs) = cwt_utils.cwt_analysis(self.params,
                                                              mother_name=self.configuration["mother_wavelet"],
                                                              period=self.configuration["period"],
                                                              num_scales=self.configuration["num_scales"],
@@ -891,9 +891,9 @@ class SigWindow(QtWidgets.QDialog):
             else:
                 self.cwt = np.real(self.cwt)
 
-            self.scales *= PLOT_SR
             self.fUpdate['loma'] = True
-
+            # operate on frames, not time
+            self.scales*=PLOT_SR
         if self.fUpdate['tiers'] or self.fUpdate['cwt']:
             import matplotlib.colors as colors
             self.ax[-1].contourf(np.real(self.cwt), 100,
@@ -908,9 +908,10 @@ class SigWindow(QtWidgets.QDialog):
 
             # get scale corresponding to avg unit length of selected tier
             unit_scale = misc.get_best_scale2(self.scales, labels)
-
+            
             unit_scale = np.max([8, unit_scale])
             unit_scale = np.min([n_scales-2, unit_scale])
+            print(unit_scale)
             labdur = []
             for l in labels:
                 labdur.append(l[1]-l[0])
@@ -967,18 +968,28 @@ class SigWindow(QtWidgets.QDialog):
         self.ax[1].set_ylabel("F0 (Hz)")
         self.ax[2].set_ylabel("Signals")
 
-        self.ax[2].set_yticklabels(["sum", "dur", "en", "f0"]) #"f0", "en", "dur", "sum"])
-        self.ax[3].set_ylabel("Wavelet (scale)")
-
+        self.ax[2].set_yticklabels(["sum", "dur", "en", "f0"])
+        self.ax[3].set_ylabel("Wavelet scale (Hz)")
+        
         plt.setp([a.get_xticklabels() for a in self.ax[0:-1]], visible=False)
         vals = self.ax[-1].get_xticks()[1:]
         ticks_x = ticker.FuncFormatter(lambda vals, p:'{:1.2f}'.format(float(vals/PLOT_SR)))
         self.ax[-1].xaxis.set_major_formatter(ticks_x)
 
-        for i in range(0,4):
+
+        # can't comprehend matplotlib ticks.. construct frequency axis manually
+        self.ax[3].set_yticks(np.linspace(0,len(self.freqs),len(self.freqs)))
+        self.ax[3].set_yticklabels(np.around(self.freqs[:-1],2).astype('str'))
+        
+        for index, label in enumerate(self.ax[3].yaxis.get_ticklabels()):
+            if index % 4 != 0 or index == 0:
+                label.set_visible(False)
+
+
+        for i in range(0,3):
             nbins = len(self.ax[i].get_yticklabels())
             self.ax[i].yaxis.set_major_locator(MaxNLocator(nbins=5, prune='lower'))
-
+            
         self.figure.subplots_adjust(hspace=0, wspace=0)
 
         if prev_zoom:

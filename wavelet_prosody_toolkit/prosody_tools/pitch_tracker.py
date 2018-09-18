@@ -150,7 +150,7 @@ def inst_freq_pitch(utt_wav,min_hz=50, max_hz=400, acorr_weight=10., voicing_thr
     periods = [5]
     for p in periods:
 
-        (wavelet_matrix,scales) = cwt_utils.cwt_analysis(params, mother_name="morlet",first_scale = s0, num_scales=J, scale_distance=dj, apply_coi=False,period=p, frame_rate = sample_rate)
+        (wavelet_matrix,scales,cwt_freqs) = cwt_utils.cwt_analysis(params, mother_name="morlet",first_scale = s0, num_scales=J, scale_distance=dj, apply_coi=False,period=p, frame_rate = sample_rate)
         # hilbert transform
         phase = np.unwrap(np.angle(wavelet_matrix), axis=1)
         freqs =  np.abs((np.gradient(phase, dt)[1]) / (2. * np.pi))
