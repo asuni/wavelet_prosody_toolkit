@@ -6,4 +6,3 @@ scipy
 pyqt5
 soundfile
 tgt
-pyreaper

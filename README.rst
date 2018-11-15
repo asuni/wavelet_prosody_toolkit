@@ -28,7 +28,7 @@ The wavelet prosody analysis depends on several packages:
 
 -  pyqt5 for the gui (see https://www.riverbankcomputing.com/commercial/pyqt )
 -  pycwt for the wavelet analysis (see https://github.com/regeirk/pycwt/LICENSE.txt )
--  pyreaper for the f0 extraction (see https://github.com/r9y9/pyreaper/blob/master/LICENSE.md )
+-  Even if not installed by default, pyreaper for the f0 extraction is supported (see https://github.com/r9y9/pyreaper/blob/master/LICENSE.md ).
 
 The user is invited to have a look at the license of the dependencies
 
@@ -55,10 +55,10 @@ Usage:
 Otherwise, go to the root directory of the program in the terminal, and start by
 
 .. code:: sh
-	     
+
     python3 wavelet_prosody_toolkit/wavelet_gui.py
 
-    
+
 2. Select directory with speech and transciption files:
    ``Select Speech Directory...``. Some examples are provided in
    ``samples/`` directory. Files should have the same root, for example

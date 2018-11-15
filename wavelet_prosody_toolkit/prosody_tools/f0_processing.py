@@ -8,14 +8,23 @@ import os
 import numpy as np
 from scipy.io import wavfile
 import pylab
-import pyreaper
 
 # Local packages
-from . import smooth_and_interp, misc
+from . import smooth_and_interp, misc, pitch_tracker
 
 # Logging
 import logging
 logger = logging.getLogger(__name__)
+
+# Pyreaper
+try:
+    import pyreaper
+    USE_REAPER = True
+    logger.info("Pyreaper is available")
+except ImportError as e:
+    USE_REAPER = False
+    logger.warning("Pyreaper is not available so falling back into the default pitch tracker")
+
 
 ###############################################################################
 
@@ -143,47 +152,30 @@ def _interpolate(f0, method="true_envelope"):
         raise("no such interpolation method: %s", method)
 
 
-def reaper(in_wav_file, waveform, fs, f0_min, f0_max):
-    if True:
+def extract_f0(waveform, fs=16000, f0_min=30, f0_max=550, harmonics=10., voicing=50., configuration="pitch_tracker"):
+    """Extract F0 from a waveform
 
-        # if len(waveform == 0):
-        (fs, waveform) = misc.read_wav(in_wav_file)
-
-        pm_times, pm, f0_times, f0, corr = pyreaper.reaper(waveform, fs,
-                                                           f0_min, f0_max)
-
-    else:
-        # use external REAPER pitch extraction binary if pyreaper not found
-        _curr_dir = os.path.dirname(os.path.realpath(__file__))
-        _reaper_bin = os.path.realpath(_curr_dir + '/../REAPER/build/reaper')
-        out_est_file = "/tmp/tmp.f0"
-        os.system(_reaper_bin + " -m %d -x %d -a -u 0.005 -i %s -f %s" %
-                  (f0_min, f0_max, in_wav_file, out_est_file))
-        f0 = np.loadtxt(out_est_file, skiprows=7, usecols=[2])
-        f0[f0 < 0] = 0.0
-
-    return f0
-
-
-def extract_f0(filename="", waveform=[], fs=16000, f0_min=0, f0_max=0):
-
+    """
     # first determine f0 without limits, then use mean and std of the first estimate
     # to limit search range.
     if (f0_min == 0) or (f0_max == 0):
-        f0 = reaper(filename, waveform, fs, 30, 550)
+        if USE_REAPER and (configuration == "REAPER"):
+            _, _, _, f0, _ = pyreaper.reaper(waveform, fs, f0_min, f0_max)
+        else:
+            (f0, _) = pitch_tracker.inst_freq_pitch(waveform, fs, f0_min, f0_max, harmonics, voicing, False, 200)
 
         mean_f0 = np.mean(f0[f0 > 0])
         std_f0 = np.std(f0[f0 > 0])
         f0_min = max((mean_f0 - 3*std_f0, 40.0))
         f0_max = mean_f0 + 6*std_f0
 
-        # # FIXME SLM: should f0 be adapted?
-        # f0[f0 < f0_min] = 0
-        # f0[f0 > f0_max] = 0
-
         logger.debug("f0_min = %f, f0_max = %f" % (f0_min, f0_max))
 
-    f0 = reaper(filename, waveform, fs, f0_min, f0_max)
+    if USE_REAPER and (configuration == "REAPER"):
+        _, _, _, f0, _ = pyreaper.reaper(waveform, fs, f0_min, f0_max)
+    else:
+        (f0, _) = pitch_tracker.inst_freq_pitch(waveform, fs, f0_min, f0_max, harmonics, voicing, False, 200)
+
     return f0
 
 

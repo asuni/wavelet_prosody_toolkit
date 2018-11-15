@@ -786,17 +786,10 @@ class SigWindow(QtWidgets.QDialog):
                 max_f0 = np.max([max_f0, 10.])
                 min_f0 = np.min([max_f0-1., min_f0])
 
-                if self.configuration["pitch_tracker"] == "REAPER":
-                    try:
-                        raw_pitch = f0_processing.extract_f0(self.cur_wav, self.sig, self.orig_sr, min_f0, max_f0)
-                    except Exception as ex:
-                        exception_log(self.logger, "REAPER not available, reverting to instantenous frequency pitch tracker", ex, logging.WARNING)
-                        pass
-
-                if self.configuration["pitch_tracker"] == "inst_freq" or raw_pitch is None:
-                    (raw_pitch, pic) = pitch_tracker.inst_freq_pitch(self.cur_wav, min_f0, max_f0,
-                                                                     float(self.harmonics.value()),
-                                                                     float(self.voicing.value()))
+                raw_pitch = f0_processing.extract_f0(self.sig, self.orig_sr, min_f0, max_f0,
+                                                     float(self.harmonics.value()),
+                                                     float(self.voicing.value()),
+                                                     self.configuration["pitch_tracker"])
 
             # FIXME: fix errors, smooth and interpolate
             try:
