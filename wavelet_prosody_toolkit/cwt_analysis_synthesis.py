@@ -43,7 +43,7 @@ import warnings
 
 import pylab
 
-from wavelet_prosody_toolkit.prosody_tools import f0_processing, cwt_utils
+from wavelet_prosody_toolkit.prosody_tools import f0_processing, cwt_utils, misc
 
 import numpy as np
 
@@ -71,7 +71,8 @@ def load_f0(input_file):
         raw_f0 = np.loadtxt(input_file)
     elif input_file.lower().endswith(".wav"):
         logging.info("Extracting the F0 from the signal")
-        raw_f0 = f0_processing.extract_f0(input_file)
+        (fs, wav_form) = misc.read_wav(input_file)
+        raw_f0 = f0_processing.extract_f0(wav_form, fs)
 
     return raw_f0
 
@@ -113,7 +114,7 @@ def run():
         np.savetxt(output_file + ".interp", f0.astype('float'), fmt="%f", delimiter="\n")
 
         # Perform continuous wavelet transform of mean-substracted f0 with 12 scales, one octave apart
-        scales, widths = cwt_utils.cwt_analysis(f0-np.mean(f0), num_scales=12, scale_distance=1.0, mother_name="mexican_hat", apply_coi=False)
+        scales, widths, _ = cwt_utils.cwt_analysis(f0-np.mean(f0), num_scales=12, scale_distance=1.0, mother_name="mexican_hat", apply_coi=False)
 
         # SSW parameterization, adjacent scales combined (with extra scales to handle long utterances)
         scales = cwt_utils.combine_scales(scales, [(0,2),(2,4),(4,6),(6,8),(8,12)])
