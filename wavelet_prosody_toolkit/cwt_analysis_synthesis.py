@@ -29,7 +29,7 @@ optional arguments:
 
 
 LICENSE
-	See LICENSE
+    See LICENSE
 """
 
 import sys
@@ -50,6 +50,7 @@ import numpy as np
 # List of logging levels used to setup everything using verbose option
 LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
+
 ###############################################################################
 # Functions
 ###############################################################################
@@ -64,7 +65,7 @@ def load_f0(input_file):
     Returns
     -------
     1D arraylike
-    	the raw f0 values
+       the raw f0 values
     """
     if input_file.lower().endswith(".f0"):
         raw_f0 = np.loadtxt(input_file)
@@ -98,7 +99,6 @@ def run():
 
     # Analysis
     if (args.mode % 2) == 0:
-
         raw_f0 = load_f0(args.input_file)
         logging.debug(raw_f0)
 
@@ -109,7 +109,6 @@ def run():
             pylab.plot(f0, color="red", alpha=0.5, linewidth=3)
             pylab.plot(raw_f0,color="gray", alpha=0.5)
 
-
         logging.info("writing interpolated lf0\t" + output_file + ".interp")
         np.savetxt(output_file + ".interp", f0.astype('float'), fmt="%f", delimiter="\n")
 
@@ -118,7 +117,7 @@ def run():
 
         # SSW parameterization, adjacent scales combined (with extra scales to handle long utterances)
         scales = cwt_utils.combine_scales(scales, [(0,2),(2,4),(4,6),(6,8),(8,12)])
-        for i in range(0,len(scales)):
+        for i in range(0, len(scales)):
             logging.debug("Mean scale[%d]: %s" % (i, str(np.mean(scales[i]))))
 
         logging.info("writing wavelet matrix \"%s.cwt\"" % output_file)
@@ -136,12 +135,12 @@ def run():
     # Synthesis mode
     if args.mode >= 1 or args.plot:
         if scales is None:
-            scales = np.loadtxt(args.input_file).reshape(-1,5).T
+            scales = np.loadtxt(args.input_file).reshape(-1, 5).T
         if args.mode == 1:
             rec = cwt_utils.cwt_synthesis(scales, args.mean_f0)
         else:
             rec = cwt_utils.cwt_synthesis(scales, np.mean(f0))
-        #rec = exp(cwt_utils.cwt_synthesis(scales)+mean(lf0))
+        # rec = exp(cwt_utils.cwt_synthesis(scales)+mean(lf0))
         # rec[f0==0] = 0
 
     if args.mode >= 1:
@@ -156,17 +155,19 @@ def run():
         logging.info("Save reconstructed f0 in %s" % output_file)
         np.savetxt(output_file, rec.astype('float'), fmt="%f", delimiter="\n")
 
-
     if args.plot:
         pylab.figure()
         pylab.title("CWT decomposition to 5 scales and reconstructed signal")
         pylab.plot(rec, linewidth=5, color="blue", alpha=0.3)
+
         if (args.mode % 2) == 0:
             pylab.plot(f0, linewidth=1, color="red")
-        for i in range(0,len(scales)):
+
+        for i in range(0, len(scales)):
             pylab.plot(scales[len(scales)-i-1]+max(rec)*1.5+i*75, color="blue", alpha=0.5, linewidth=2)
 
         pylab.show()
+
 
 ###############################################################################
 #  Envelopping

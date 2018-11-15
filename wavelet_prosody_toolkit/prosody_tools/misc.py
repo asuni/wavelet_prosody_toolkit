@@ -1,10 +1,14 @@
-import pylab
+import os
+from scipy.signal import resample_poly
+import fractions
 import soundfile
 import numpy as np
+from pylab import ginput
 
 # Logging
 import logging
 logger = logging.getLogger(__name__)
+
 
 def read_wav(filename):
     """Read wave file using soundfile.read
@@ -17,10 +21,10 @@ def read_wav(filename):
     Returns
     -------
     samplerate: int
-    	The audio signal sample rate.
+        The audio signal sample rate.
 
     data: 1D arraylike
-    	The audio samples of the first channel with memory layout as C-order
+        The audio samples of the first channel with memory layout as C-order
     """
     # various packages tried.. difficulties with channels, 24bit files, various dtypes
     # pysoundfile appears to mostly work
@@ -61,7 +65,7 @@ def write_wav(filename, data, sr, format="WAV"):
         The output audio format (Default value is WAV for wav file).
 
     """
-    
+
     soundfile.write(filename, data, sr, format=format)
 
 
@@ -77,33 +81,27 @@ def resample(waveform, s_sr, t_sr):
        original sample rate
     t_sr: float
        target sample rate
-    
+
     returns: resampled waveform as np.array
     """
-    from scipy.signal import resample_poly
-    import fractions
     ratio = fractions.Fraction(int(t_sr), int(s_sr))
     return resample_poly(waveform, ratio.numerator, ratio.denominator)
-    
 
 
 def play(utt):
-    from pylab import ginput
-    import os
-    import sys
-    wavfile = utt+".wav"
+    wavfile = utt + ".wav"
     wavfile = wavfile.replace(" ", "\ ")
     st = 0.2
     end = 1
-    i=0
-    while (st  > 0.01):
+
+    while (st > 0.01):
         try:
-            pts =ginput(1)
+            pts = ginput(1)
             st = pts[0][0] / 200.0
             end = 1.0
         except:
             continue
-        os.system("play %s trim 0:0:%f 0:0:%f " %(wavfile, st, end))
+        os.system("play %s trim 0:0:%f 0:0:%f " % (wavfile, st, end))
 
 
 def match_length(sig_list):
@@ -136,16 +134,16 @@ def get_peaks(params, threshold=-10):
     Returns
     -------
     peaks: arraylike
-    	array of peak values and peak indices
+        array of peak values and peak indices
     """
-    zc = np.where(np.diff(np.sign(np.diff(params))))[0]
-    indices = (np.diff(np.sign(np.diff(params))) < 0).nonzero()[0] +1
+    # zc = np.where(np.diff(np.sign(np.diff(params))))[0]  # FIXME SLM: not used
+    indices = (np.diff(np.sign(np.diff(params))) < 0).nonzero()[0] + 1
 
     peaks = params[indices]
-    return np.array([peaks[peaks>threshold], indices[peaks>threshold]])
+    return np.array([peaks[peaks > threshold], indices[peaks > threshold]])
 
 
-def calc_prominence(params, labels, func=np.max, use_peaks = True, rate=200):
+def calc_prominence(params, labels, func=np.max, use_peaks=True, rate=200):
     """Compute prominences
 
     Parameters
@@ -162,18 +160,18 @@ def calc_prominence(params, labels, func=np.max, use_peaks = True, rate=200):
 
     """
     labelled = []
-    norm = params.astype(float)
+    # norm = params.astype(float)  # FIXME SLM: not used
     for (start, end, segment, word) in labels:
         if use_peaks:
             peaks = []
             (peaks, indices) = get_peaks(params[start*rate-1:end*rate], 0.0)
 
-            if len(peaks) >0:
+            if len(peaks) > 0:
                 labelled.append(np.max(peaks))
             else:
                 labelled.append(0.0)
         else:
-            #labelled.append([word, func(params[start-10:end])])
+            # labelled.append([word, func(params[start-10:end])])
             labelled.append(func(params[start*rate:end*rate]))
 
     return labelled
@@ -192,14 +190,14 @@ def get_best_scale(wavelet_matrix, num_units):
     Returns
     -------
     int
-    	the index of the best scale
+        the index of the best scale
     """
     best_i = 0
     best = 999
     for i in range(0, wavelet_matrix.shape[0]):
         num_peaks = len(get_peaks(wavelet_matrix[i])[0])
 
-        dist= abs(num_peaks - num_units)
+        dist = abs(num_peaks - num_units)
         if dist < best:
             best = dist
             best_i = i
@@ -221,7 +219,7 @@ def get_best_scale2(scales, labels):
     Returns
     -------
     int
-    	the index of the best scale
+        the index of the best scale
 
     """
     mean_length = 0
@@ -247,7 +245,7 @@ def normalize_minmax(params, epsilon=0.1):
     Returns
     ------
     arraylike
-    	the normalized parameters
+        the normalized parameters
 
     """
     return (params-min(params)+epsilon)/(max(params)-min(params))
@@ -267,15 +265,14 @@ def normalize_std(params, std=0):
     Returns
     ------
     arraylike
-    	the normalized parameters
+        the normalized parameters
     """
-    from scipy import stats
-    if std ==0:
+    if std == 0:
         std = np.nanstd(params)
 
     # empty array or all zeros
-    #if std==0:
-    if std < 0.00001: #np.isclose([std,0]):
+    # if std==0:
+    if std < 0.00001:  # np.isclose([std,0]):
         return np.zeros(len(params))
 
     mean = np.nanmean(params)
