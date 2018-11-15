@@ -43,10 +43,14 @@ import csv
 
 # Wavelet part
 # - acoustic features
-from wavelet_prosody_toolkit.prosody_tools import f0_processing, energy_processing, duration_processing
+from wavelet_prosody_toolkit.prosody_tools import energy_processing
+from wavelet_prosody_toolkit.prosody_tools import f0_processing
+from wavelet_prosody_toolkit.prosody_tools import duration_processing
 
 # - helpers
-from wavelet_prosody_toolkit.prosody_tools import misc, smooth_and_interp, pitch_tracker
+from wavelet_prosody_toolkit.prosody_tools import misc
+from wavelet_prosody_toolkit.prosody_tools import smooth_and_interp
+from wavelet_prosody_toolkit.prosody_tools import pitch_tracker
 
 # - wavelet transform
 from wavelet_prosody_toolkit.prosody_tools import cwt_utils, loma, lab
@@ -63,8 +67,6 @@ try:
 except NameError:
     unicode = str
 
-import traceback
-
 # Analysis sample rate
 ANALYSIS_SR = 8000.0
 
@@ -73,7 +75,7 @@ PLOT_SR = 200.0
 
 
 ###############################################################################
-## Logging
+# Logging
 ###############################################################################
 # List of logging levels used to setup everything using verbose option
 LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
@@ -95,7 +97,8 @@ class QtHandler(logging.Handler):
                 color = "blue"
 
             record = self.format(record)
-            self.qedit.appendHtml("<font color=\"%s\">%s</font>\n" % (color, str(record)))
+            self.qedit.appendHtml("<font color=\"%s\">%s</font>\n" %
+                                  (color, str(record)))
 
 
 HANDLER = QtHandler()
@@ -120,8 +123,9 @@ def exception_log(logger, head_msg, ex, level=logging.ERROR):
     logger.log(level, "%s:" % head_msg)
     logger.log(level, "<br />".join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
 
+
 ###############################################################################
-## Callbacks
+# Callbacks
 ###############################################################################
 def press_zoom(self, event):
     """Zoom call back
@@ -157,7 +161,7 @@ def drag_pan(self, event):
 
 
 ###############################################################################
-## Window class
+# Window class
 ###############################################################################
 class SigWindow(QtWidgets.QDialog):
     """Main window class
@@ -247,11 +251,16 @@ class SigWindow(QtWidgets.QDialog):
         left_layout.addWidget(self.status)
 
         ##########################################
-        # Define directory listing
+        # Define the right part of the window
         ##########################################
+        # Define directory listing
         self.filelist = QtWidgets.QListWidget(self)
         self.filelist.setMaximumSize(800, 300)
         self.filelist.currentItemChanged.connect(self.onWavChanged)
+
+        # Define logging activation checkbox
+        self.bSwitchLogging = QtWidgets.QCheckBox("Show logging part")
+        self.bSwitchLogging.clicked.connect(self.onSwitchLogging)
 
         # Define directory selection button
         self.chooseDir = QtWidgets.QPushButton('Select Speech Directory')
@@ -283,10 +292,8 @@ class SigWindow(QtWidgets.QDialog):
         self.bUseExistingF0.clicked.connect(self.onF0Changed)
         self.bUseExistingF0.setToolTip("See examples folder for supported formats")
 
-        ##########################################
-        # Define the right part of the window
-        ##########################################
         right_layout = QtWidgets.QVBoxLayout()
+        right_layout.addWidget(self.bSwitchLogging)
         right_layout.addWidget(self.filelist)
         right_layout.addWidget(self.chooseDir)
         right_layout.addWidget(self.bProcessAll)
@@ -303,27 +310,37 @@ class SigWindow(QtWidgets.QDialog):
         ##########################################
         # Finalize the main part layout
         ##########################################
+        self.main_widget_pager = QtWidgets.QWidget(self)
         main_layout = QtWidgets.QHBoxLayout()
         main_layout.addLayout(left_layout, 3)
         main_layout.addLayout(right_layout, 1)
+        self.main_widget_pager.setLayout(main_layout)
 
         ##########################################
         # Define the logger layout part
         ##########################################
-
+        self.logger_widget_pager = QtWidgets.QWidget(self)
         self.tLogger = QtWidgets.QPlainTextEdit(self)
-        self.tLogger.setMaximumSize(1600,30)
         logger_layout = QtWidgets.QHBoxLayout()
         logger_layout.addWidget(self.tLogger)
+        self.logger_widget_pager.setLayout(logger_layout)
+        self.logger_widget_pager.close()  # We don't show the logging by default
         HANDLER.qedit = self.tLogger
 
         ##########################################
         # Finalize the main part layout
         ##########################################
-        final_layout = QtWidgets.QVBoxLayout()
-        final_layout.addLayout(main_layout, 4)
-        final_layout.addLayout(logger_layout, 1)
-        self.setLayout(final_layout)
+        full_layout = QtWidgets.QVBoxLayout()
+        full_layout.addWidget(self.main_widget_pager, 4)
+        full_layout.addWidget(self.logger_widget_pager, 1)
+        self.setLayout(full_layout)
+
+
+    def onSwitchLogging(self):
+        if self.logger_widget_pager.isVisible():
+            self.logger_widget_pager.close()
+        else:
+            self.logger_widget_pager.show()
 
     def setF0Limits(self):
         """Setup the F0 limits area
@@ -505,7 +522,6 @@ class SigWindow(QtWidgets.QDialog):
 
     # reading of textgrids and lab, use previously selected tiers
     def populateTierList(self):
-        import os.path
 
         # clear selection
         self.tierlist.clear()
@@ -578,7 +594,7 @@ class SigWindow(QtWidgets.QDialog):
         return groupBox
 
     ##############################################################
-    ## Event callbacks
+    # Event callbacks
     ##############################################################
     def onWeightChanged(self):
         self.fUpdate['cwt'] = True
@@ -881,11 +897,11 @@ class SigWindow(QtWidgets.QDialog):
             self.logger.debug("wavelet transform...")
 
             (self.cwt, self.scales, self.freqs) = cwt_utils.cwt_analysis(self.params,
-                                                             mother_name=self.configuration["mother_wavelet"],
-                                                             period=self.configuration["period"],
-                                                             num_scales=self.configuration["num_scales"],
-                                                             scale_distance=self.configuration["scale_distance"],
-                                                             apply_coi=True)
+                                                                         mother_name=self.configuration["mother_wavelet"],
+                                                                         period=self.configuration["period"],
+                                                                         num_scales=self.configuration["num_scales"],
+                                                                         scale_distance=self.configuration["scale_distance"],
+                                                                         apply_coi=True)
             if self.configuration["magnitude"]:
                 self.cwt = np.log(np.abs(self.cwt)+1.)
             else:
@@ -908,7 +924,7 @@ class SigWindow(QtWidgets.QDialog):
 
             # get scale corresponding to avg unit length of selected tier
             unit_scale = misc.get_best_scale2(self.scales, labels)
-            
+
             unit_scale = np.max([8, unit_scale])
             unit_scale = np.min([n_scales-2, unit_scale])
             print(unit_scale)
@@ -970,26 +986,24 @@ class SigWindow(QtWidgets.QDialog):
 
         self.ax[2].set_yticklabels(["sum", "dur", "en", "f0"])
         self.ax[3].set_ylabel("Wavelet scale (Hz)")
-        
+
         plt.setp([a.get_xticklabels() for a in self.ax[0:-1]], visible=False)
         vals = self.ax[-1].get_xticks()[1:]
         ticks_x = ticker.FuncFormatter(lambda vals, p:'{:1.2f}'.format(float(vals/PLOT_SR)))
         self.ax[-1].xaxis.set_major_formatter(ticks_x)
 
-
         # can't comprehend matplotlib ticks.. construct frequency axis manually
         self.ax[3].set_yticks(np.linspace(0,len(self.freqs),len(self.freqs)))
         self.ax[3].set_yticklabels(np.around(self.freqs[:-1],2).astype('str'))
-        
+
         for index, label in enumerate(self.ax[3].yaxis.get_ticklabels()):
             if index % 4 != 0 or index == 0:
                 label.set_visible(False)
 
-
         for i in range(0,3):
             nbins = len(self.ax[i].get_yticklabels())
-            self.ax[i].yaxis.set_major_locator(MaxNLocator(nbins=5, prune='lower'))
-            
+            self.ax[i].yaxis.set_major_locator(MaxNLocator(nbins=nbins, prune='lower'))
+
         self.figure.subplots_adjust(hspace=0, wspace=0)
 
         if prev_zoom:
@@ -1002,7 +1016,7 @@ class SigWindow(QtWidgets.QDialog):
 
 
 ##############################################################################################
-## Main routine definition
+# Main routine definition
 ##############################################################################################
 def main():
     """Entry point which start the QT application
