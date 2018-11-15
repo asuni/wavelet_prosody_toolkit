@@ -6,3 +6,4 @@ scipy
 pyqt5
 soundfile
 tgt
+pyyaml
