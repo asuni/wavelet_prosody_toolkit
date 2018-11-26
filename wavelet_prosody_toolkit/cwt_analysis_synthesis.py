@@ -43,7 +43,10 @@ import warnings
 
 import pylab
 
-from wavelet_prosody_toolkit.prosody_tools import f0_processing, cwt_utils, misc
+# Wavelet import
+from wavelet_prosody_toolkit.prosody_tools import misc
+from wavelet_prosody_toolkit.prosody_tools import cwt_utils
+from wavelet_prosody_toolkit.prosody_tools import f0_processing
 
 import numpy as np
 
