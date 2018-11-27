@@ -358,19 +358,19 @@ class SigWindow(QtWidgets.QDialog):
 
         # Min F0
         self.min_f0 = QtWidgets.QLineEdit("min F0")
-        self.min_f0.setText(str(self.configuration["min_f0"]))
+        self.min_f0.setText(str(self.configuration["f0"]["min_f0"]))
         self.min_f0.setInputMask("000")
         self.min_f0.textChanged.connect(self.onF0Changed)
 
         # Max F0
         self.max_f0 = QtWidgets.QLineEdit("min F0")
-        self.max_f0.setText(str(self.configuration["max_f0"]))
+        self.max_f0.setText(str(self.configuration["f0"]["max_f0"]))
         self.max_f0.setInputMask("000")
         self.max_f0.textChanged.connect(self.onF0Changed)
 
         # Voicing
         self.voicing = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.voicing.setSliderPosition(self.configuration["voicing_threshold"])
+        self.voicing.setSliderPosition(self.configuration["f0"]["voicing_threshold"])
         self.voicing.valueChanged.connect(self.onF0Changed)
 
         # Harmonics
@@ -411,19 +411,19 @@ class SigWindow(QtWidgets.QDialog):
 
         # F0 widgets
         l1 = QtWidgets.QLabel("F0")
-        self.wF0 = QtWidgets.QLineEdit(str(self.configuration["weights"]["f0"]))
+        self.wF0 = QtWidgets.QLineEdit(str(self.configuration["feature_combination"]["weights"]["f0"]))
         self.wF0.setInputMask("0.0")
         self.wF0.setMaxLength(3)
 
         # Energy widgets
         l2 = QtWidgets.QLabel("Energy")
-        self.wEnergy = QtWidgets.QLineEdit(str(self.configuration["weights"]["energy"]))
+        self.wEnergy = QtWidgets.QLineEdit(str(self.configuration["feature_combination"]["weights"]["energy"]))
         self.wEnergy.setInputMask("0.0")
         self.wEnergy.setMaxLength(3)
 
         # Duration widgets
         l3 = QtWidgets.QLabel("Duration")
-        self.wDuration = QtWidgets.QLineEdit(str(self.configuration["weights"]["duration"]))
+        self.wDuration = QtWidgets.QLineEdit(str(self.configuration["feature_combination"]["weights"]["duration"]))
         self.wDuration.setInputMask("0.0")
         self.wDuration.setMaxLength(3)
 
@@ -461,13 +461,13 @@ class SigWindow(QtWidgets.QDialog):
 
         # Signal rate
         self.signalRate = QtWidgets.QCheckBox("Estimate speech rate from signal")
-        self.signalRate.setChecked(self.configuration["acoustic_estimation"])
+        self.signalRate.setChecked(self.configuration["duration"]["acoustic_estimation"])
         self.signalRate.clicked.connect(self.onSignalRate)
 
         # Delta
         self.diffDur = QtWidgets.QCheckBox("Use delta-duration")
         self.diffDur.setToolTip("Point-wise difference of the durations signal, empirically found to improve boundary detection in some cases")
-        self.diffDur.setChecked(self.configuration["delta_duration"])
+        self.diffDur.setChecked(self.configuration["duration"]["delta_duration"])
         self.diffDur.clicked.connect(self.onSignalRate)
 
         # Setup the group box
@@ -504,7 +504,7 @@ class SigWindow(QtWidgets.QDialog):
         self.sum_feats = QtWidgets.QRadioButton("sum")
         self.mul_feats = QtWidgets.QRadioButton("product")
 
-        if self.configuration["feature_combination"] == "product":
+        if self.configuration["feature_combination"]["type"] == "product":
             self.mul_feats.setChecked(True)
         else:
             self.sum_feats.setChecked(True)
@@ -552,7 +552,7 @@ class SigWindow(QtWidgets.QDialog):
             self.signalTiers.addItem(k)
 
         if self.current_tier == "":
-            self.current_tier = self.configuration["annotation_tier"]
+            self.current_tier = self.configuration["labels"]["annotation_tier"]
 
         # activate previously selected tiers
         try:
@@ -572,7 +572,7 @@ class SigWindow(QtWidgets.QDialog):
                 pass
 
         if len(self.current_dur_tiers) == 0:
-            self.current_dur_tiers = self.configuration["duration_tiers"]
+            self.current_dur_tiers = self.configuration["duration"]["duration_tiers"]
 
         if len(self.current_dur_tiers) > 0:
             for i in range(0, len(self.current_dur_tiers)):
@@ -757,11 +757,11 @@ class SigWindow(QtWidgets.QDialog):
             # 'energy' is just a smoothed envelope here
             self.logger.debug("analyzing energy..")
             self.energy = energy_processing.extract_energy(self.sig, self.orig_sr,
-                                                           self.configuration["energy_band_min"],
-                                                           self.configuration["energy_band_max"],
-                                                           self.configuration["energy_calculation_method"])
+                                                           self.configuration["energy"]["band_min"],
+                                                           self.configuration["energy"]["band_max"],
+                                                           self.configuration["energy"]["calculation_method"])
 
-            if self.configuration["smooth_energy"]:
+            if self.configuration["energy"]["smooth_energy"]:
                 self.energy_smooth = smooth_and_interp.peak_smooth(self.energy, 30, 3)  # FIXME: 30? 3?
             else:
                 self.energy_smooth = self.energy
@@ -789,7 +789,7 @@ class SigWindow(QtWidgets.QDialog):
                 raw_pitch = f0_processing.extract_f0(self.sig, self.orig_sr, min_f0, max_f0,
                                                      float(self.harmonics.value()),
                                                      float(self.voicing.value()),
-                                                     self.configuration["pitch_tracker"])
+                                                     self.configuration["f0"]["pitch_tracker"])
 
             # FIXME: fix errors, smooth and interpolate
             try:
@@ -823,7 +823,7 @@ class SigWindow(QtWidgets.QDialog):
                 try:
                     # Only if some tiers are selected
                     if (len(sig_tiers))>0:
-                        self.rate = duration_processing.get_duration_signal(sig_tiers, sil_symbols=self.configuration["silence_symbols"])
+                        self.rate = duration_processing.get_duration_signal(sig_tiers, sil_symbols=self.configuration["duration"]["silence_symbols"])
                 except Exception as ex:
                     exception_log(self.logger, "Duration signal construction failed", ex, logging.ERROR)
 
@@ -868,7 +868,7 @@ class SigWindow(QtWidgets.QDialog):
                          misc.normalize_std(self.energy_smooth) * float(self.wEnergy.text()) + \
                          misc.normalize_std(self.rate) * float(self.wDuration.text())
 
-            if self.configuration["detrend"]:
+            if self.configuration["feature_combination"]["detrend"]:
                 params = smooth_and_interp.remove_bias(params, 800)  # FIXME: 800?
 
             self.params = misc.normalize_std(params)
@@ -890,12 +890,12 @@ class SigWindow(QtWidgets.QDialog):
             self.logger.debug("wavelet transform...")
 
             (self.cwt, self.scales, self.freqs) = cwt_utils.cwt_analysis(self.params,
-                                                                         mother_name=self.configuration["mother_wavelet"],
-                                                                         period=self.configuration["period"],
-                                                                         num_scales=self.configuration["num_scales"],
-                                                                         scale_distance=self.configuration["scale_distance"],
+                                                                         mother_name=self.configuration["wavelet"]["mother_wavelet"],
+                                                                         period=self.configuration["wavelet"]["period"],
+                                                                         num_scales=self.configuration["wavelet"]["num_scales"],
+                                                                         scale_distance=self.configuration["wavelet"]["scale_distance"],
                                                                          apply_coi=True)
-            if self.configuration["magnitude"]:
+            if self.configuration["wavelet"]["magnitude"]:
                 self.cwt = np.log(np.abs(self.cwt)+1.)
             else:
                 self.cwt = np.real(self.cwt)
@@ -912,8 +912,8 @@ class SigWindow(QtWidgets.QDialog):
         # calculate lines of maximum and minimum amplitude
         if self.fUpdate['loma'] and labels:
             self.logger.debug("lines of maximum amplitude...")
-            n_scales = self.configuration["num_scales"]
-            scale_dist = self.configuration["scale_distance"]
+            n_scales = self.configuration["wavelet"]["num_scales"]
+            scale_dist = self.configuration["wavelet"]["scale_distance"]
 
             # get scale corresponding to avg unit length of selected tier
             unit_scale = misc.get_best_scale2(self.scales, labels)
@@ -926,10 +926,10 @@ class SigWindow(QtWidgets.QDialog):
                 labdur.append(l[1]-l[0])
 
             # Define the scale information (FIXME: description)
-            pos_loma_start_scale = unit_scale + int(self.configuration["prom_loma_start"]/scale_dist)  # three octaves down from average unit length
-            pos_loma_end_scale = unit_scale + int(self.configuration["prom_loma_end"]/scale_dist)
-            neg_loma_start_scale = unit_scale + int(self.configuration["boundary_loma_start"]/scale_dist)  # two octaves down
-            neg_loma_end_scale = unit_scale + int(self.configuration["boundary_loma_end"]/scale_dist)  # one octave up
+            pos_loma_start_scale = unit_scale + int(self.configuration["loma"]["prom_start"]/scale_dist)  # three octaves down from average unit length
+            pos_loma_end_scale = unit_scale + int(self.configuration["loma"]["prom_end"]/scale_dist)
+            neg_loma_start_scale = unit_scale + int(self.configuration["loma"]["boundary_start"]/scale_dist)  # two octaves down
+            neg_loma_end_scale = unit_scale + int(self.configuration["loma"]["boundary_end"]/scale_dist)  # one octave up
 
             # some bug if starting from 0-3 scales
             pos_loma_start_scale = np.max([4, pos_loma_start_scale])
