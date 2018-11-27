@@ -39,6 +39,11 @@ import argparse
 import time
 import logging
 
+import yaml
+
+# Collections
+from collections import defaultdict
+
 import warnings
 
 import pylab
@@ -54,10 +59,14 @@ import numpy as np
 LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
 
+# FIXME: be more specific!
+warnings.simplefilter("ignore", np.ComplexWarning) # Plotting can't deal with complex, but we don't care
+
+
 ###############################################################################
 # Functions
 ###############################################################################
-def load_f0(input_file):
+def load_f0(input_file, configuration):
     """Load the f0 from a text file or extract it from a wav file
 
     Parameters
@@ -89,21 +98,33 @@ def run():
     This function contains the code needed to achieve the analysis and/or the synthesis
     """
     global args
-    scales = None
+
+    # Loading default configuration
+    with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/default.yaml", 'r') as f:
+        configuration = defaultdict(lambda: False, yaml.load(f))
+
+    # Loading user configuration
+    if args.configuration_file:
+        try:
+            with open(args.configuration_file, 'r') as f:
+                configuration = defaultdict(lambda: False, yaml.load(f))
+        except IOError as ex:
+            logging.error("configuration file " + args.config + " could not be loaded:")
+            logging.error(ex.msg)
+            sys.exit(1)
 
     # Dealing with output
-    output_dir = args.output
+    output_dir = args.output_file
     if output_dir is None:
         output_dir = os.path.dirname(args.input_file)
     basename = os.path.basename(args.input_file)
     output_file = os.path.join(output_dir, basename)
 
-    # FIXME: be more specific!
-    warnings.simplefilter("ignore", np.ComplexWarning) # Plotting can't deal with complex, but we don't care
+    scales = None
 
     # Analysis
     if (args.mode % 2) == 0:
-        raw_f0 = load_f0(args.input_file)
+        raw_f0 = load_f0(args.input_file, configuration)
         logging.debug(raw_f0)
 
         logging.info("Processing f0")
@@ -117,7 +138,7 @@ def run():
         np.savetxt(output_file + ".interp", f0.astype('float'), fmt="%f", delimiter="\n")
 
         # Perform continuous wavelet transform of mean-substracted f0 with 12 scales, one octave apart
-        scales, widths, _ = cwt_utils.cwt_analysis(f0-np.mean(f0), num_scales=12, scale_distance=1.0, mother_name="mexican_hat", apply_coi=False)
+        scales, widths, _ = cwt_utils.cwt_analysis(f0-np.mean(f0), num_scales=configuration["num_scales"], scale_distance=configuration["scale_distance"], mother_name=configuration["mother_wavelet"], apply_coi=False)
 
         # SSW parameterization, adjacent scales combined (with extra scales to handle long utterances)
         scales = cwt_utils.combine_scales(scales, [(0,2),(2,4),(4,6),(6,8),(8,12)])
@@ -149,10 +170,10 @@ def run():
 
     if args.mode >= 1:
         if args.mode == 1:
-            if output_file is not None:
+            if output_file is None:
                 output_file = args.input_file + "_rec.f0"
             else:
-                output_file = args.output
+                output_file = args.output_file
         else:
             output_file += "_rec.f0"
 
@@ -193,13 +214,14 @@ def main():
                             help="script mode: 0=analysis, 1=synthesis, 2=analysis/synthesis")
         parser.add_argument("-m", "--mean_f0", type=float, default=100,
                             help="Mean f0 needed for synthesis (unsed for analysis modes)")
-        parser.add_argument("-o", "--output",
-                            help="output directory for analysis or filename for synthesis. (Default: input_file directory [Analysis] or <input_file>.f0 [Synthesis])")
         parser.add_argument("-P", "--plot", action="store_true",
                             help="Plot the results")
 
         # Add arguments
+        parser.add_argument("configuration_file", help="Configuration file")
         parser.add_argument("input_file", help="Input signal or F0 file")
+        parser.add_argument("output_file",
+                            help="output directory for analysis or filename for synthesis. (Default: input_file directory [Analysis] or <input_file>.f0 [Synthesis])")
 
         # Parsing arguments
         args = parser.parse_args()

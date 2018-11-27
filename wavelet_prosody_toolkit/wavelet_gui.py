@@ -1022,9 +1022,7 @@ def main():
                             help="increase output verbosity")
 
         # Load default configuration
-        root = os.path.dirname(os.path.realpath(sys.argv[0]))
-        parser.add_argument("-c", "--config", default=root+"/configs/default.yaml",
-                            help="configuration file")
+        parser.add_argument("-c", "--config", default=None, help="configuration file")
 
         # Parsing arguments
         args = parser.parse_args()
@@ -1039,15 +1037,17 @@ def main():
         global_logger = logging.getLogger()
         global_logger.addHandler(HANDLER)
 
-        # Load configuration (FIXME: yaml hardcoded! )
-        configuration = None
-        try:
-            with open(args.config, 'r') as f:
-                configuration = defaultdict(lambda: False, yaml.load(f))
-        except IOError as ex:
-            logging.error("configuration file " + args.config + " could not be loaded:")
-            logging.error(ex.msg)
-            sys.exit(1)
+        # Load configuration
+        with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/default.yaml", 'r') as f:
+            configuration = defaultdict(lambda: False, yaml.load(f))
+        if args.config:
+            try:
+                with open(args.config, 'r') as f:
+                    configuration = defaultdict(lambda: False, yaml.load(f))
+            except IOError as ex:
+                logging.error("configuration file " + args.config + " could not be loaded:")
+                logging.error(ex.msg)
+                sys.exit(1)
 
         # Debug time
         start_time = time.time()
