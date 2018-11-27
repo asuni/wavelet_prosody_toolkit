@@ -11,7 +11,7 @@ REQUIREMENTS = [
     "pycwt", "matplotlib", "numpy", "scipy",
 
     # Audio/speech
-    "soundfile", "tgt", "pyreaper",  "wavio",
+    "soundfile", "tgt", "wavio",
 
     # Rendering
     "pyqt5", "Sphinx"
