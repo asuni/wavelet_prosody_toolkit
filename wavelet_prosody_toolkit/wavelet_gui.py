@@ -50,7 +50,6 @@ from wavelet_prosody_toolkit.prosody_tools import duration_processing
 # - helpers
 from wavelet_prosody_toolkit.prosody_tools import misc
 from wavelet_prosody_toolkit.prosody_tools import smooth_and_interp
-from wavelet_prosody_toolkit.prosody_tools import pitch_tracker
 
 # - wavelet transform
 from wavelet_prosody_toolkit.prosody_tools import cwt_utils, loma, lab

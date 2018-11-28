@@ -132,26 +132,34 @@ def run():
         if args.plot:
             pylab.title("F0 preprocessing and interpolation")
             pylab.plot(f0, color="red", alpha=0.5, linewidth=3)
-            pylab.plot(raw_f0,color="gray", alpha=0.5)
+            pylab.plot(raw_f0, color="gray", alpha=0.5)
 
         logging.info("writing interpolated lf0\t" + output_file + ".interp")
-        np.savetxt(output_file + ".interp", f0.astype('float'), fmt="%f", delimiter="\n")
+        np.savetxt(output_file + ".interp", f0.astype('float'),
+                   fmt="%f", delimiter="\n")
 
         # Perform continuous wavelet transform of mean-substracted f0 with 12 scales, one octave apart
-        scales, widths, _ = cwt_utils.cwt_analysis(f0-np.mean(f0), num_scales=configuration["num_scales"], scale_distance=configuration["scale_distance"], mother_name=configuration["mother_wavelet"], apply_coi=False)
+        scales, widths, _ = cwt_utils.cwt_analysis(f0-np.mean(f0), num_scales=configuration["wavelet"]["num_scales"],
+                                                   scale_distance=configuration["wavelet"]["scale_distance"],
+                                                   mother_name=configuration["wavelet"]["mother_wavelet"],
+                                                   apply_coi=False)
 
         # SSW parameterization, adjacent scales combined (with extra scales to handle long utterances)
-        scales = cwt_utils.combine_scales(scales, [(0,2),(2,4),(4,6),(6,8),(8,12)])
+        scales = cwt_utils.combine_scales(scales,
+                                          [(0, 2), (2, 4), (4, 6), (6, 8), (8, 12)])
         for i in range(0, len(scales)):
             logging.debug("Mean scale[%d]: %s" % (i, str(np.mean(scales[i]))))
 
         logging.info("writing wavelet matrix \"%s.cwt\"" % output_file)
-        np.savetxt(output_file + ".cwt", scales[:].T.astype('float'), fmt="%f", delimiter="\n")
+        np.savetxt(output_file + ".cwt", scales[:].T.astype('float'),
+                   fmt="%f", delimiter="\n")
 
         # for individual training of scales
-        for i in range(0, 5):
+        for i in range(0, len(scales)):
             logging.info("writing scale \"%s.cwt.%d\"" % (output_file, i))
-            np.savetxt(output_file+".cwt."+str(i+1), scales[i].astype('float'),fmt="%f", delimiter="\n")
+            np.savetxt("%s.cwt.%d" % (output_file, i+1),
+                       scales[i].astype('float'),
+                       fmt="%f", delimiter="\n")
 
     # then add deltas etc, train and generate
     # then synthesis by the following, voicing and mean value
@@ -189,7 +197,8 @@ def run():
             pylab.plot(f0, linewidth=1, color="red")
 
         for i in range(0, len(scales)):
-            pylab.plot(scales[len(scales)-i-1]+max(rec)*1.5+i*75, color="blue", alpha=0.5, linewidth=2)
+            pylab.plot(scales[len(scales)-i-1]+max(rec)*1.5+i*75,
+                       color="blue", alpha=0.5, linewidth=2)
 
         pylab.show()
 
@@ -208,17 +217,17 @@ def main():
         parser = argparse.ArgumentParser(description="Tool for CWT analysis/synthesis of the F0")
 
         # Add options
-        parser.add_argument("-v", "--verbosity", action="count", default=0,
-                            help="increase output verbosity")
+        parser.add_argument("-c", "--configuration-file", default=None, help="configuration file")
         parser.add_argument("-M", "--mode", type=int, default=0,
                             help="script mode: 0=analysis, 1=synthesis, 2=analysis/synthesis")
         parser.add_argument("-m", "--mean_f0", type=float, default=100,
                             help="Mean f0 needed for synthesis (unsed for analysis modes)")
         parser.add_argument("-P", "--plot", action="store_true",
                             help="Plot the results")
+        parser.add_argument("-v", "--verbosity", action="count", default=0,
+                            help="increase output verbosity")
 
         # Add arguments
-        parser.add_argument("configuration_file", help="Configuration file")
         parser.add_argument("input_file", help="Input signal or F0 file")
         parser.add_argument("output_file",
                             help="output directory for analysis or filename for synthesis. (Default: input_file directory [Analysis] or <input_file>.f0 [Synthesis])")
@@ -260,4 +269,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 # cwt_analysis_synthesis.py ends here
