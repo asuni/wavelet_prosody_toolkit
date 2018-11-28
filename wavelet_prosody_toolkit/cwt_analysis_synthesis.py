@@ -81,6 +81,9 @@ def load_f0(input_file, configuration):
     """
     if input_file.lower().endswith(".f0"):
         raw_f0 = np.loadtxt(input_file)
+    elif input_file.lower().endswith(".lf0"):
+        raw_f0 = np.loadtxt(input_file)
+        raw_f0 = np.exp(raw_f0)
     elif input_file.lower().endswith(".wav"):
         logging.info("Extracting the F0 from the signal")
         (fs, wav_form) = misc.read_wav(input_file)
