@@ -10,7 +10,8 @@ from scipy.io import wavfile
 import pylab
 
 # Local packages
-from . import smooth_and_interp, misc, pitch_tracker
+from . import smooth_and_interp
+from . import pitch_tracker
 
 # Logging
 import logging
@@ -21,9 +22,9 @@ try:
     import pyreaper
     USE_REAPER = True
     logger.info("Pyreaper is available")
-except ImportError as e:
+except ImportError:
     USE_REAPER = False
-    logger.warning("Pyreaper is not available so falling back into the default pitch tracker")
+    logger.debug("Pyreaper is not available so falling back into the default pitch tracker")
 
 
 ###############################################################################
@@ -220,39 +221,3 @@ def read_f0(filename):
                     logger.error("unknown format for F0 value in file \"%s\"" % filename)
 
     return None
-
-
-if __name__ == "__main__":
-
-    pylab.ion()
-    try:
-        f0_glott = np.loadtxt(sys.argv[1]+".F0")
-        pylab.plot(f0_glott, label="glott")
-        pylab.plot(process(f0_glott, fix_outliers=False),
-                   label="glott_fixed", linewidth=2)
-    except:
-        print("no f0 file found, using reaper")
-
-    (x, fs) = wavfile.read(sys.argv[1] + ".wav")
-    if type(x[0]) in[np.float16, np.float32, np.float64]:
-        print(type(x[0]))
-        x *= 16000  # FIXME SLM: why?
-        x = x.astype('int16')
-
-    # raw_input()
-    # fs, x = wavfile.read(sys.argv[1]+".wav")
-    os.system("play %s.wav" % sys.argv[1])
-    pm_times, pm, f0_times, f0_reaper, corr = pyreaper.reaper(x, fs, 50, 450)
-
-    f0_adaptive = extract_f0(sys.argv[1] + ".wav")
-
-    # pylab.plot(f0_reaper, label="reaper")
-    pylab.plot(f0_adaptive, label="reaper_adapt")
-
-    # pylab.plot(process(f0_reaper, fix_outliers=True), label="reaper_fixed", linewidth=2)
-    pylab.plot(process(f0_adaptive, fix_outliers=True, do_trace=False),
-               label="reaper_adapt_fixed", linewidth=2)
-    pylab.legend()
-    pylab.show()
-
-    # raw_input()

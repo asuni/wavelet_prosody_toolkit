@@ -15,7 +15,7 @@ def read_textgrid(filename, sample_rate=200):
         if (tg.get_tier_by_name(tier)).tier_type()!='IntervalTier':
             continue
         tiers.append(tg.get_tier_by_name(tier))
-      
+
         lab = []
         for a in tiers[-1].annotations:
 
@@ -39,7 +39,7 @@ def read_textgrid(filename, sample_rate=200):
     #for t in tg.tiers:
         #print t
     #    print tg.tiers[0].encode('latin-1')
-  
+
     return labs
 
 
@@ -58,20 +58,20 @@ def read_htk_label(fname, scale = "word", htk_time=True, only_words=False):
     Convert times from HTK units to MS
     """
     import codecs
-    
+
     try:
-      
+
         f = codecs.open(fname,"r", "utf-8")
         #f = open(fname, "r")
     except:
         #raw_input()
         raise Exception("htk label file %s not found" % fname)
-    
+
     label = f.readlines()
     f.close()
 
     label = [line.split() for line in label] ## split lines on whitespace
-  
+
     segments = []
     words = []
     prev_end = 0.0
@@ -89,10 +89,10 @@ def read_htk_label(fname, scale = "word", htk_time=True, only_words=False):
             (start,end,segment) = line
             if start == "nan":
                 continue
-	   
+
         elif len(line)==4:
             (start,end,segment,word) = line
-            
+
         else:
 
             print("Bad line length:")
@@ -115,7 +115,7 @@ def read_htk_label(fname, scale = "word", htk_time=True, only_words=False):
         segments.append([int(start), int(end), segment]) #
 
         # handle the last word too
-       
+
         """
         if word or segments[-1][2] in ["SIL", "pause", '#']:
             try:
@@ -125,7 +125,7 @@ def read_htk_label(fname, scale = "word", htk_time=True, only_words=False):
                 pass
         """
         if word:
-            
+
             words.append([int(prev_start), int(prev_end),prev_word])
             prev_start = start
             prev_word = word
@@ -136,11 +136,11 @@ def read_htk_label(fname, scale = "word", htk_time=True, only_words=False):
     if len(words) > 0:
         labs["words"] = words
     labs["segments"] = segments
-   
-   
+
+
     return labs
 
-    
+
 def plot_labels(labels,shift = 0,  fig="", text = True, ypos = -0.5, color="black", boundary=True, size =9,prominences=[], rate = 1.):
     import numpy as np
     import pylab
@@ -155,9 +155,9 @@ def plot_labels(labels,shift = 0,  fig="", text = True, ypos = -0.5, color="blac
     import matplotlib as mpl
     mpl.rcParams['font.family'] = 'fantasy'
     mpl.rcParams['font.fantasy'] = 'Ubuntu' #'Arial'
-    
+
     import matplotlib.patches as patches
-    
+
     fig.add_patch(patches.Rectangle((labels[0][0], 0), labels[-1][1]-labels[0][0], size*0.3,color="white",alpha=0.35))
     i = 0
     for (start, end, segment) in labels:
@@ -173,15 +173,9 @@ def plot_labels(labels,shift = 0,  fig="", text = True, ypos = -0.5, color="blac
                 fig.text(start+(end-start)/2,ypos, segment, color=color,fontsize=size*(prominences[i]+0.5)*1,ha='center',alpha=0.75) #, color="grey")
             except:
                 pass
-            
+
             if boundary:
                 fig.axvline(x=start, color='gray',linestyle="-",alpha=0.5)
                 fig.axvline(x=end, color='gray',linestyle="-",alpha=0.5)
-          
+
         i+=1
-
-if __name__ == "__main__":
-    import sys
-
-    read_textgrid(sys.argv[1])
-

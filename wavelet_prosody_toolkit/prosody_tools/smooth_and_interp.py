@@ -149,17 +149,3 @@ def peak_smooth(params, max_iter, win,
         pylab.plot(smoothed, 'red', linewidth=2)
         pylab.show()
     return smoothed
-
-
-if __name__ == "__main__":
-    fs, x = wavfile.read(sys.argv[1])
-
-    x = np.abs(x)
-    x = decimate(x, 20, zero_phase=True)
-    pylab.plot(x, label="original")
-    pylab.plot(peak_smooth(x, 50, 2, TRACE=False),
-               label="envelope-preserving smoothing")
-    pylab.plot(smooth(x, 30), label="gaussian smoothing")
-
-    pylab.legend()
-    pylab.show()

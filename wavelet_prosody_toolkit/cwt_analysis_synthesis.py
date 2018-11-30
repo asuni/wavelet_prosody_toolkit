@@ -109,6 +109,9 @@ def run():
     """
     global args
 
+    if not (args.verbosity > LEVEL.index(logging.INFO)):
+        warnings.simplefilter("ignore", FutureWarning)     # Plotting can't deal with complex, but we don't care
+
     # Loading default configuration
     with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/default.yaml", 'r') as f:
         configuration = defaultdict(lambda: False, yaml.load(f))

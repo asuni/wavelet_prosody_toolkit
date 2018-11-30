@@ -47,55 +47,5 @@ def extract_energy(waveform, fs=16000, min_freq=200, max_freq=3000, method='rms'
 
 
 def process(energy, voicing=[]):
-
-    energy=smooth_and_interp.peak_smooth(energy, 100, 5, voicing=voicing)
+    energy = smooth_and_interp.peak_smooth(energy, 100, 5, voicing=voicing)
     return energy
-
-
-if __name__ == "__main__":
-
-
-    import sys
-    import pylab
-    hilbert_env = extract_energy(sys.argv[1]) #, min_freq=500, max_freq=4000, method='hilbert')
-
-    pylab.plot(np.log(hilbert_env))
-    true_env = extract_energy(sys.argv[1], method='true_envelope')
-    mag = extract_energy(sys.argv[1], method='rms')
-
-    pylab.plot(misc.normalize_minmax(hilbert_env), label="hilbert envelope")
-    pylab.plot(misc.normalize_minmax(true_env), label="true envelope")
-    pylab.plot(misc.normalize_minmax(mag), label="magnitude" )
-
-    pylab.legend()
-    pylab.show()
-
-    import f0_processing
-    f0 = f0_processing.extract_f0(sys.argv[1])
-    f0, true_env= misc.match_length(f0,true_env)
-
-    pylab.plot(misc.normalize_minmax(true_env))
-    pylab.plot(misc.normalize_minmax(f0_processing.process(f0)))
-    pylab.show()
-    pylab.ion()
-    pylab.plot(hilbert_env)
-    """
-    hilbert_env[hilbert_env<0] = 0
-    pylab.plot((0.15*np.log(hilbert_env+1.)))
-    raw_input()
-
-    fixed = f0_processing._remove_outliers(np.log(hilbert_env+1.))
-    pylab.clf()
-    fixed = np.exp(fixed)-1.
-    pylab.plot(fixed)
-    pylab.plot(hilbert_env)
-    raw_input()
-
-    #pylab.plot(f0_processing._remove_outliers(0.15*np.log(true_env+1.), trace=True))
-    """
-    pylab.clf()
-    import scipy.signal
-    pylab.plot(misc.normalize_minmax(hilbert_env))
-    pylab.plot(process(misc.normalize_minmax(scipy.signal.medfilt(hilbert_env,5))))
-    pylab.show()
-  

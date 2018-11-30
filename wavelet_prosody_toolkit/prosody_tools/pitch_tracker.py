@@ -187,20 +187,3 @@ def inst_freq_pitch(wav_form, fs, min_hz=50, max_hz=400, acorr_weight=10., voici
 
     logger.debug("tracking pitch done.")
     return (pitch,pic)
-
-
-
-if __name__ == "__main__":
-    import sys
-
-    #if __package__ is None:
-    #    import sys
-    #    from os import path
-    #    sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ))
-    pitch, pic = inst_freq_pitch(sys.argv[1],acorr_weight=0.1,voicing_thresh=10,min_hz=50,max_hz=400,DEBUG=False)
-    import pylab
-    pylab.plot(pitch,color="white", linewidth=2, alpha=0.75)
-    pitch[pitch>0] = np.log(pitch[pitch>0])
-    pylab.plot(np.exp(f0_processing._remove_outliers(pitch))) #np.log(pitch)))
-    pylab.imshow(np.log(pic[:, 0:400].T+0.0001), interpolation='nearest', origin='lower',aspect='auto')
-    pylab.show()
