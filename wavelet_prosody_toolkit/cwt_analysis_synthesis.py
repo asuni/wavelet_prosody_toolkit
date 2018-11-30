@@ -46,7 +46,9 @@ from collections import defaultdict
 
 import warnings
 
-import pylab
+# Plotting
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 
 # Wavelet import
 from wavelet_prosody_toolkit.prosody_tools import misc
@@ -58,15 +60,14 @@ import numpy as np
 # List of logging levels used to setup everything using verbose option
 LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
-
 # FIXME: be more specific!
-warnings.simplefilter("ignore", np.ComplexWarning) # Plotting can't deal with complex, but we don't care
+warnings.simplefilter("ignore", np.ComplexWarning)  # Plotting can't deal with complex, but we don't care
 
 
 ###############################################################################
 # Functions
 ###############################################################################
-def load_f0(input_file, configuration):
+def load_f0(input_file, binary_mode=False):
     """Load the f0 from a text file or extract it from a wav file
 
     Parameters
@@ -80,9 +81,15 @@ def load_f0(input_file, configuration):
        the raw f0 values
     """
     if input_file.lower().endswith(".f0"):
-        raw_f0 = np.loadtxt(input_file)
+        if binary_mode:
+            raw_f0 = np.fromfile(input_file, dtype=np.float32)
+        else:
+            raw_f0 = np.loadtxt(input_file)
     elif input_file.lower().endswith(".lf0"):
-        raw_f0 = np.loadtxt(input_file)
+        if binary_mode:
+            raw_f0 = np.fromfile(input_file, dtype=np.float32)
+        else:
+            raw_f0 = np.loadtxt(input_file)
         raw_f0 = np.exp(raw_f0)
     elif input_file.lower().endswith(".wav"):
         logging.info("Extracting the F0 from the signal")
@@ -116,94 +123,91 @@ def run():
             logging.error(ex.msg)
             sys.exit(1)
 
-    # Dealing with output
-    output_dir = args.output_file
-    if output_dir is None:
-        output_dir = os.path.dirname(args.input_file)
-    basename = os.path.basename(args.input_file)
-    output_file = os.path.join(output_dir, basename)
-
-    scales = None
-
-    # Analysis
-    if (args.mode % 2) == 0:
-        raw_f0 = load_f0(args.input_file, configuration)
+    # Analysis Mode
+    if args.mode == 0:
+        raw_f0 = load_f0(args.input_file, args.binary_mode)
         logging.debug(raw_f0)
 
         logging.info("Processing f0")
         f0 = f0_processing.process(raw_f0)
+        # FIXME: reintegrated
         if args.plot:
-            pylab.title("F0 preprocessing and interpolation")
-            pylab.plot(f0, color="red", alpha=0.5, linewidth=3)
-            pylab.plot(raw_f0, color="gray", alpha=0.5)
+            plt.title("F0 preprocessing and interpolation")
+            plt.plot(f0, color="red", alpha=0.5, linewidth=3)
+            plt.plot(raw_f0, color="gray", alpha=0.5)
+            plt.show()
 
-        logging.info("writing interpolated lf0\t" + output_file + ".interp")
-        np.savetxt(output_file + ".interp", f0.astype('float'),
-                   fmt="%f", delimiter="\n")
+        # # FIXME: read this?
+        # logging.info("writing interpolated lf0\t" + output_file + ".interp")
+        # np.savetxt(output_file + ".interp", f0.astype('float'),
+        #            fmt="%f", delimiter="\n")
 
         # Perform continuous wavelet transform of mean-substracted f0 with 12 scales, one octave apart
-        scales, widths, _ = cwt_utils.cwt_analysis(f0-np.mean(f0), num_scales=configuration["wavelet"]["num_scales"],
-                                                   scale_distance=configuration["wavelet"]["scale_distance"],
-                                                   mother_name=configuration["wavelet"]["mother_wavelet"],
-                                                   apply_coi=False)
+        logging.info("Starting analysis with (num_scale=%d, scale_distance=%f, mother_name=%s)" %
+                     (configuration["wavelet"]["num_scales"], configuration["wavelet"]["scale_distance"], configuration["wavelet"]["mother_wavelet"]))
+        full_scales, widths, _ = cwt_utils.cwt_analysis(f0 - np.mean(f0),
+                                                        mother_name=configuration["wavelet"]["mother_wavelet"],
+                                                        period=configuration["wavelet"]["period"],
+                                                        num_scales=configuration["wavelet"]["num_scales"],
+                                                        scale_distance=configuration["wavelet"]["scale_distance"],
+                                                        apply_coi=True)
 
         # SSW parameterization, adjacent scales combined (with extra scales to handle long utterances)
-        scales = cwt_utils.combine_scales(scales,
-                                          [(0, 2), (2, 4), (4, 6), (6, 8), (8, 12)])
+        scales = cwt_utils.combine_scales(np.real(full_scales), configuration["wavelet"]["combined_scales"])
         for i in range(0, len(scales)):
             logging.debug("Mean scale[%d]: %s" % (i, str(np.mean(scales[i]))))
 
-        logging.info("writing wavelet matrix \"%s.cwt\"" % output_file)
-        np.savetxt(output_file + ".cwt", scales[:].T.astype('float'),
-                   fmt="%f", delimiter="\n")
-
-        # for individual training of scales
-        for i in range(0, len(scales)):
-            logging.info("writing scale \"%s.cwt.%d\"" % (output_file, i))
-            np.savetxt("%s.cwt.%d" % (output_file, i+1),
-                       scales[i].astype('float'),
-                       fmt="%f", delimiter="\n")
-
-    # then add deltas etc, train and generate
-    # then synthesis by the following, voicing and mean value
-    # have to come from other sources
+        # Saving matrix
+        logging.info("writing wavelet matrix in \"%s\"" % args.output_file)
+        if args.binary_mode:
+            with open(args.output_file, "wb") as f_out:
+                scales.T.astype(np.float32).tofile(f_out)
+        else:
+            np.savetxt(args.output_file, scales.T.astype('float'), fmt="%f", delimiter=",")
 
     # Synthesis mode
-    if args.mode >= 1 or args.plot:
-        if scales is None:
-            scales = np.loadtxt(args.input_file).reshape(-1, 5).T
-        if args.mode == 1:
-            rec = cwt_utils.cwt_synthesis(scales, args.mean_f0)
+    if args.mode == 1:
+        if args.binary_mode:
+            scales = np.fromfile(args.input_file, dtype=np.float32)
+            scales = scales.reshape(-1, len(configuration["wavelet"]["combined_scales"])).T
         else:
-            rec = cwt_utils.cwt_synthesis(scales, np.mean(f0))
-        # rec = exp(cwt_utils.cwt_synthesis(scales)+mean(lf0))
-        # rec[f0==0] = 0
+            scales = np.loadtxt(args.input_file, delimiter=",").T  # FIXME: hardcoded
 
-    if args.mode >= 1:
-        if args.mode == 1:
-            if output_file is None:
-                output_file = args.input_file + "_rec.f0"
-            else:
-                output_file = args.output_file
+        rec = cwt_utils.cwt_synthesis(scales, args.mean_f0)
+
+        logging.info("Save reconstructed f0 in %s" % args.output_file)
+        if args.binary_mode:
+            with open(args.output_file, "wb") as f_out:
+                rec.astype(np.float32).tofile(f_out)
         else:
-            output_file += "_rec.f0"
+            np.savetxt(args.output_file, rec, fmt="%f")
 
-        logging.info("Save reconstructed f0 in %s" % output_file)
-        np.savetxt(output_file, rec.astype('float'), fmt="%f", delimiter="\n")
-
+    # Debugging /plotting part
     if args.plot:
-        pylab.figure()
-        pylab.title("CWT decomposition to 5 scales and reconstructed signal")
-        pylab.plot(rec, linewidth=5, color="blue", alpha=0.3)
+        nb_sub = 2
+        if args.mode == 0:
+            nb_sub = 3
 
-        if (args.mode % 2) == 0:
-            pylab.plot(f0, linewidth=1, color="red")
+        plt.subplot(nb_sub, 1, 1)
+        # pylab.title("CWT decomposition to % scales and reconstructed signal" % len(configuration["wavelet"]["combined_scales"]))
 
+        if args.mode == 0:
+            plt.plot(f0, linewidth=1, color="red")
+            rec = cwt_utils.cwt_synthesis(scales, np.mean(f0))
+
+        plt.plot(rec, linewidth=5, color="blue", alpha=0.3)
+
+        plt.subplot(nb_sub, 1, 2)
         for i in range(0, len(scales)):
-            pylab.plot(scales[len(scales)-i-1]+max(rec)*1.5+i*75,
-                       color="blue", alpha=0.5, linewidth=2)
+            plt.plot(scales[len(scales)-i-1] + max(rec)*1.5 + i*75,
+                     color="blue", alpha=0.5)
 
-        pylab.show()
+        if args.mode == 0:
+            plt.subplot(nb_sub, 1, 3)
+            plt.contourf(np.real(full_scales), 100,
+                         norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05, vmin=-1.0, vmax=1.0),
+                         cmap="jet")
+        plt.show()
 
 
 ###############################################################################
@@ -220,9 +224,11 @@ def main():
         parser = argparse.ArgumentParser(description="Tool for CWT analysis/synthesis of the F0")
 
         # Add options
+        parser.add_argument("-B", "--binary-mode", action="store_true",
+                            help="Activate binary mode, else files are assumed to be a csv for the f0/wavelet part")
         parser.add_argument("-c", "--configuration-file", default=None, help="configuration file")
         parser.add_argument("-M", "--mode", type=int, default=0,
-                            help="script mode: 0=analysis, 1=synthesis, 2=analysis/synthesis")
+                            help="script mode: 0=analysis, 1=synthesis")
         parser.add_argument("-m", "--mean_f0", type=float, default=100,
                             help="Mean f0 needed for synthesis (unsed for analysis modes)")
         parser.add_argument("-P", "--plot", action="store_true",
@@ -233,7 +239,8 @@ def main():
         # Add arguments
         parser.add_argument("input_file", help="Input signal or F0 file")
         parser.add_argument("output_file",
-                            help="output directory for analysis or filename for synthesis. (Default: input_file directory [Analysis] or <input_file>.f0 [Synthesis])")
+                            help="output directory for analysis or filename for synthesis. " +
+                            "(Default: input_file directory [Analysis] or <input_file>.f0 [Synthesis])")
 
         # Parsing arguments
         args = parser.parse_args()
