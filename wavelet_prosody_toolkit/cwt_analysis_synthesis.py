@@ -129,7 +129,6 @@ def run():
     # Analysis Mode
     if args.mode == 0:
         raw_f0 = load_f0(args.input_file, args.binary_mode)
-        logging.debug(raw_f0)
 
         logging.info("Processing f0")
         f0 = f0_processing.process(raw_f0)
@@ -191,23 +190,23 @@ def run():
         if args.mode == 0:
             nb_sub = 3
 
-        plt.subplot(nb_sub, 1, 1)
+        ax = plt.subplot(nb_sub, 1, 1)
         # pylab.title("CWT decomposition to % scales and reconstructed signal" % len(configuration["wavelet"]["combined_scales"]))
 
         if args.mode == 0:
             plt.plot(f0, linewidth=1, color="red")
             rec = cwt_utils.cwt_synthesis(scales, np.mean(f0))
 
-        plt.plot(rec, linewidth=5, color="blue", alpha=0.3)
+        plt.plot(rec, color="blue", alpha=0.3)
 
-        plt.subplot(nb_sub, 1, 2)
+        plt.subplot(nb_sub, 1, 2, sharex=ax)
         for i in range(0, len(scales)):
             plt.plot(scales[len(scales)-i-1] + max(rec)*1.5 + i*75,
                      color="blue", alpha=0.5)
 
         if args.mode == 0:
-            plt.subplot(nb_sub, 1, 3)
-            plt.contourf(np.real(full_scales), 100,
+            plt.subplot(nb_sub, 1, 3, sharex=ax)
+            plt.contourf(np.real(full_scales), len(full_scales),
                          norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05, vmin=-1.0, vmax=1.0),
                          cmap="jet")
         plt.show()
