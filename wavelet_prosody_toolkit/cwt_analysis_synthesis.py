@@ -80,6 +80,11 @@ def load_f0(input_file, binary_mode=False):
     1D arraylike
        the raw f0 values
     """
+    if input_file.lower().endswith(".csv"):
+        if binary_mode:
+            raise Exception("cannot have a csv file in binary mode")
+        else:
+            raw_f0 = np.loadtxt(input_file)
     if input_file.lower().endswith(".f0"):
         if binary_mode:
             raw_f0 = np.fromfile(input_file, dtype=np.float32)
