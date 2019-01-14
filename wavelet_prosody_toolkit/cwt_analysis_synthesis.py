@@ -67,6 +67,40 @@ warnings.simplefilter("ignore", np.ComplexWarning)  # Plotting can't deal with c
 ###############################################################################
 # Functions
 ###############################################################################
+def apply_configuration(current_configuration, updating_part):
+    """Utils to update the current configuration using the updating part
+
+    Parameters
+    ----------
+    current_configuration: dict
+        The current state of the configuration
+
+    updating_part: dict
+        The information to add to the current configuration
+
+    Returns
+    -------
+    dict
+       the updated configuration
+    """
+    if not isinstance(current_configuration, dict):
+        return updating_part
+
+    if current_configuration is None:
+        return updating_part
+
+    if updating_part is None:
+        return current_configuration
+
+    for k in updating_part:
+        if k not in current_configuration:
+            current_configuration[k] = updating_part[k]
+        else:
+            current_configuration[k] = apply_configuration(current_configuration[k], updating_part[k])
+
+    return current_configuration
+
+
 def load_f0(input_file, binary_mode=False):
     """Load the f0 from a text file or extract it from a wav file
 
@@ -114,18 +148,28 @@ def run():
     """
     global args
 
-    if not (args.verbosity > LEVEL.index(logging.INFO)):
-        warnings.simplefilter("ignore", FutureWarning)     # Plotting can't deal with complex, but we don't care
+    warnings.simplefilter("ignore", FutureWarning)     # Plotting can't deal with complex, but we don't care
 
     # Loading default configuration
+    configuration = defaultdict()
     with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/default.yaml", 'r') as f:
-        configuration = defaultdict(lambda: False, yaml.load(f))
+        configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f)))
+        logging.debug("default configuration")
+        logging.debug(configuration)
+
+    # Loading dedicated analysis.synthesis configuration
+    with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/synthesis.yaml", 'r') as f:
+        configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f)))
+        logging.debug("configuration filled with synthesis part")
+        logging.debug(configuration)
 
     # Loading user configuration
     if args.configuration_file:
         try:
             with open(args.configuration_file, 'r') as f:
-                configuration = defaultdict(lambda: False, yaml.load(f))
+                configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f)))
+                logging.debug("configuration filled with user part")
+                logging.debug(configuration)
         except IOError as ex:
             logging.error("configuration file " + args.config + " could not be loaded:")
             logging.error(ex.msg)
@@ -254,10 +298,12 @@ def main():
 
         # Verbose level => logging level
         log_level = args.verbosity
-        if (args.verbosity > len(LEVEL)):
-            logging.warning("verbosity level is too high, I'm gonna assume you're taking the highes ")
+        if (args.verbosity >= len(LEVEL)):
             log_level = len(LEVEL) - 1
-        logging.basicConfig(level=LEVEL[log_level])
+            logging.basicConfig(level=LEVEL[log_level])
+            logging.warning("verbosity level is too high, I'm gonna assume you're taking the highest (%d)" % log_level)
+        else:
+            logging.basicConfig(level=LEVEL[log_level])
 
         # Debug time
         start_time = time.time()

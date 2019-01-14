@@ -52,7 +52,7 @@ setup(
 
     # Packaging
     packages=find_packages(),  # FIXME: see later to exclude the test (which will be including later)
-    package_data={'': ['configs/default.yaml']},
+    package_data={'': ['configs/default.yaml', 'configs/synthesis.yaml']},
     include_package_data=True,
 
     # Meta information to sort the project
