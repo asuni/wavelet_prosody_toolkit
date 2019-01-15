@@ -24,13 +24,24 @@ paper, duration signal was generated from word level labels.
 Requirements
 ------------
 
-The wavelet prosody analysis depends on several packages:
+The wavelet prosody analysis depends on several packages which are installed automatically if you
+use the procedure describe in `./INSTALL.rst <INSTALL.rst>`__.
 
--  pyqt5 for the gui (see https://www.riverbankcomputing.com/commercial/pyqt )
--  pycwt for the wavelet analysis (see https://github.com/regeirk/pycwt/LICENSE.txt )
--  Even if not installed by default, pyreaper for the f0 extraction is supported (see https://github.com/r9y9/pyreaper/blob/master/LICENSE.md ).
+Here are the main dependencies:
 
-The user is invited to have a look at the license of the dependencies
+-  **pyqt5** for the gui (see https://www.riverbankcomputing.com/commercial/pyqt )
+-  **pycwt** for the wavelet analysis (see https://github.com/regeirk/pycwt/LICENSE.txt )
+-  **pyyaml** for the configuration (see https://github.com/yaml/pyyaml/blob/master/LICENSE )
+-  **matplotlib** for the plot rendering (see https://github.com/matplotlib/matplotlib/blob/master/LICENSE/LICENSE )
+-  **soundfile** for playing waves (see https://github.com/bastibe/SoundFile/blob/master/LICENSE )
+-  **wavio** for reading/writing wav (see https://github.com/WarrenWeckesser/wavio/blob/master/README.rst )
+-  **tgt** for reading/writing textgrid (see https://github.com/hbuschme/TextGridTools/blob/master/LICENSE )
+
+Here the optional dependencies:
+
+-  **pyreaper** for the f0 extraction (see https://github.com/r9y9/pyreaper/blob/master/LICENSE.md ).
+
+**The user is invited to have a look at the license of the dependencies.**
 
 Installation
 ------------
@@ -109,6 +120,8 @@ Additional customization of the input signals and wavelet analysis is possible b
 .. code:: sh
 
 	  wavelet_prosody_toolkit/configs/default.yaml
+
+You can view an online version here: https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/wavelet_prosody_toolkit/configs/default.yaml
 
 You are recommended to make a copy of the default.yaml file (to e.g. myconfig.yaml), and modify the copy.  To apply the modified configuration, start the program by
 
