@@ -31,15 +31,12 @@ feature_combination:
 labels:
   annotation_tier: "words"                # adjust these to your annotation scheme
 
-
 wavelet:
   mother_wavelet: "mexican_hat"           # mexican_hat, morlet or paul
   period: 3                               # applies to morlet and paul wavelets (periods 2 - 5 are reasonable)
 
   scale_distance: 0.25                    # distance between adjacent scales in octaves, (0.25 means 4 scales per octave)
   num_scales: 40                          # number of wavelet scales
-  combined_scales: [[0, 2], [2, 4], [4, 10], [10, 20], [20, 40]]  # FIXME: see for values
-
   magnitude: False                        # for purposes other than prosodic event annotation,
                                           # examinining wavelet magnitude might be useful (complex wavelets Morlet or Paul should be used)
 

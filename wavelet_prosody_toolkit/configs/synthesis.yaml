@@ -1,0 +1,2 @@
+wavelet:
+  combined_scales: [[0, 2], [2, 4], [4, 10], [10, 20], [20, 40]]  # FIXME: see for values
