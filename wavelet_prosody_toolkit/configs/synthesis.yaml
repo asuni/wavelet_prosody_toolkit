@@ -1,2 +1,6 @@
 wavelet:
-  combined_scales: [[0, 2], [2, 4], [4, 10], [10, 20], [20, 40]]  # FIXME: see for values
+  mother_wavelet: "mexican_hat"           # mexican_hat, morlet or paul	
+  scale_distance: 1                    # distance between adjacent scales in octaves, (0.25 means 4 scales per octave)
+  num_scales: 12                          # number of wavelet scales
+  combined_scales: [[0, 2], [2, 4], [4, 6], [6, 8], [8, 12]]  
+ 

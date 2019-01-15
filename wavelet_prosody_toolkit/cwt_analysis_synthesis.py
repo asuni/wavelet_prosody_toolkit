@@ -204,7 +204,7 @@ def run():
                                                         period=configuration["wavelet"]["period"],
                                                         num_scales=configuration["wavelet"]["num_scales"],
                                                         scale_distance=configuration["wavelet"]["scale_distance"],
-                                                        apply_coi=True)
+                                                        apply_coi=False)
         full_scales = np.real(full_scales)
         # SSW parameterization, adjacent scales combined (with extra scales to handle long utterances)
         scales = cwt_utils.combine_scales(np.real(full_scales), configuration["wavelet"]["combined_scales"])
