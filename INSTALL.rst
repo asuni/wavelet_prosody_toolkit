@@ -17,13 +17,19 @@ the following command:
 
 .. code:: sh
 
-    python3 setup.py install --user
+    pip3 install -e. --user
 
 or for all users, **with root privileges**, using this command:
 
 .. code:: sh
 
-    python3 setup.py install
+    pip3 install -e.
+
+By default pyreaper is **not enabled**. If you want to install it, use the following command:
+
+.. code:: sh
+
+    pip3 install -e.[reaper] --user
 
 Developer installation
 ----------------------
@@ -59,8 +65,6 @@ should print something like:
 
 .. code:: sh
 
-    pip3 install --user pyqt5
-    pip3 install --user numpy scipy
     python3 setup.py develop --user
 
 -  start the Wavelet Prosody Analyzer:
@@ -69,4 +73,4 @@ should print something like:
 
     python3 wavelet_prosody_toolkit/wavelet_gui.py
 
-if it doesn’t work, please raise an issue.
+if it doesn’t work, please raise an issue on github here: https://github.com/seblemaguer/wavelet_prosody_toolkit/issues .
