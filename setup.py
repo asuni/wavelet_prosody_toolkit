@@ -21,6 +21,9 @@ REQUIREMENTS = [
     # Rendering
     "pyqt5", "Sphinx"
 ]
+EXTRA_REQUIREMENTS = {
+    'reaper': ["pyreaper"]
+}
 NAME = 'wavelet-prosody-toolkit'
 VERSION = '1.0b1'
 RELEASE = '1.0'
@@ -39,6 +42,7 @@ setup(
 
     # Install requirements
     install_requires=REQUIREMENTS,
+    extras_require=EXTRA_REQUIREMENTS,
 
     # Documentation generation
     cmdclass=cmdclass,
