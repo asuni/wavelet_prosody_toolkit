@@ -67,7 +67,7 @@ warnings.simplefilter("ignore", np.ComplexWarning)  # Plotting can't deal with c
 ###############################################################################
 # Functions
 ###############################################################################
-def load_f0(input_file, binary_mode=False):
+def load_f0(input_file, binary_mode=False, configuration=None):
     """Load the f0 from a text file or extract it from a wav file
 
     Parameters
@@ -99,7 +99,10 @@ def load_f0(input_file, binary_mode=False):
     elif input_file.lower().endswith(".wav"):
         logging.info("Extracting the F0 from the signal")
         (fs, wav_form) = misc.read_wav(input_file)
-        raw_f0 = f0_processing.extract_f0(wav_form, fs)
+        raw_f0 = f0_processing.extract_f0(wav_form, fs,
+                                          configuration["f0"]["min_f0"],
+                                          configuration["f0"]["max_f0"])
+        
 
     return raw_f0
 
@@ -133,7 +136,7 @@ def run():
 
     # Analysis Mode
     if args.mode == 0:
-        raw_f0 = load_f0(args.input_file, args.binary_mode)
+        raw_f0 = load_f0(args.input_file, args.binary_mode, configuration)
 
         logging.info("Processing f0")
         f0 = f0_processing.process(raw_f0)
@@ -158,7 +161,7 @@ def run():
                                                         num_scales=configuration["wavelet"]["num_scales"],
                                                         scale_distance=configuration["wavelet"]["scale_distance"],
                                                         apply_coi=True)
-
+        full_scales = np.real(full_scales)
         # SSW parameterization, adjacent scales combined (with extra scales to handle long utterances)
         scales = cwt_utils.combine_scales(np.real(full_scales), configuration["wavelet"]["combined_scales"])
         for i in range(0, len(scales)):
@@ -206,14 +209,17 @@ def run():
 
         plt.subplot(nb_sub, 1, 2, sharex=ax)
         for i in range(0, len(scales)):
-            plt.plot(scales[len(scales)-i-1] + max(rec)*1.5 + i*75,
+            plt.plot(scales[i] + max(rec)*1.5 + i*75,
                      color="blue", alpha=0.5)
+            #plt.plot(scales[len(scales)-i-1] + max(rec)*1.5 + i*75,
+            
+            
 
         if args.mode == 0:
             plt.subplot(nb_sub, 1, 3, sharex=ax)
-            plt.contourf(np.real(full_scales), len(full_scales),
-                         norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05, vmin=-1.0, vmax=1.0),
-                         cmap="jet")
+            plt.contourf(np.real(full_scales), 100,
+                         norm=colors.SymLogNorm(linthresh=0.2, linscale=0.05,
+                                                vmin=np.min(full_scales), vmax=np.max(full_scales)),cmap="jet")
         plt.show()
 
 
