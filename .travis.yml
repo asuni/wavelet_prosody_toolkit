@@ -12,11 +12,13 @@ language: python
 
 python:
   - "3.6"
-  - "3.7"
+  - "3.6-dev"  # 3.6 development branch
+  - "3.7-dev"  # 3.7 development branch
 
+cache: pip
 
 install:
-  - python setup.py install --user
+  - pip install -e .
 
 script:
   - bash test/run_test.sh
