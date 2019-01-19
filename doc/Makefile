@@ -6,7 +6,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = wavelet-prosody-toolkit
 SOURCEDIR     = .
-BUILDDIR      = ../build/docs
+BUILDDIR      = ../build/doc
 
 
 
