@@ -118,7 +118,8 @@ columns:
     <file_name> <start_time> <end_time> <unit> <prominence strength> <boundary strength>
 
 Advanced Usage:
---------------
+---------------
+
 Additional customization of the input signals and wavelet analysis is possible by modifying the configuration file. The default configuration is located in:
 
 .. code:: sh
