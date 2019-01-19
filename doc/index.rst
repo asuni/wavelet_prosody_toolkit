@@ -1,6 +1,9 @@
+.. include:: ../README.rst
+
+API Documentation
+-----------------
 
 .. toctree::
    :maxdepth: 2
 
-   readme_link
    reference

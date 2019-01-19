@@ -22,6 +22,14 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath('../..'))
 
+# -- Fix non implicit call to sphinx-apidoc (see https://github.com/sphinx-doc/sphinx/issues/1861 )
+import sphinx.apidoc
+
+def setup(app):
+    """Helper to generate source code documentation
+    """
+    sphinx.apidoc.main(['-f', '-T', '-e', '-o', 'doc/_modules', '../wavelet_prosody_toolkit/'])
+
 
 # -- General configuration ------------------------------------------------
 
@@ -58,7 +66,7 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = 'wavelet-prosody-toolkit'
+project = 'Wavelet prosody analysis toolkit'
 copyright = '2018, Antti Suni'
 author = 'Antti Suni'
 
