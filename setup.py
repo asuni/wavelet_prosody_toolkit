@@ -3,9 +3,6 @@
 # Needed imports
 from setuptools import setup, find_packages
 
-# For documentation => sphinx
-from sphinx.setup_command import BuildDoc
-cmdclass = {'build_sphinx': BuildDoc}
 
 # Define meta-informations variable
 REQUIREMENTS = [
@@ -19,16 +16,34 @@ REQUIREMENTS = [
     "soundfile", "tgt", "wavio",
 
     # Rendering
-    "pyqt5", "Sphinx"
+    "pyqt5"
 ]
+
 EXTRA_REQUIREMENTS = {
     'reaper': ["pyreaper"]
 }
+
 NAME = 'wavelet-prosody-toolkit'
 VERSION = '1.0b1'
 RELEASE = '1.0'
 DESCRIPTION = 'Prosody wavelet analysis toolkit'
 AUTHOR = 'Antti Suni'
+
+
+# For documentation => sphinx
+try:
+    from sphinx.setup_command import BuildDoc
+    cmdclass = {'build_sphinx': BuildDoc}
+    command_options = {
+        'build_sphinx': {
+            'project': ('setup.py', NAME),
+            'version': ('setup.py', VERSION),
+            'release': ('setup.py', RELEASE)
+        }
+    }
+except ModuleNotFoundError:
+    cmdclass = {}
+    command_options = {}
 
 # The actual setup
 setup(
@@ -46,13 +61,7 @@ setup(
 
     # Documentation generation
     cmdclass=cmdclass,
-    command_options={  # these are optional and override conf.py settings
-        'build_sphinx': {
-            'project': ('setup.py', NAME),
-            'version': ('setup.py', VERSION),
-            'release': ('setup.py', RELEASE)
-        }
-    },
+    command_options=command_options,
 
     # Packaging
     packages=find_packages(),  # FIXME: see later to exclude the test (which will be including later)
