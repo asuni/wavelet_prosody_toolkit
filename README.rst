@@ -1,3 +1,7 @@
+|travis-badge|
+
+.. |travis-badge| image:: https://travis-ci.org/seblemaguer/wavelet_prosody_toolkit.svg?branch=master
+
 Wavelet prosody analyzer
 ========================
 
