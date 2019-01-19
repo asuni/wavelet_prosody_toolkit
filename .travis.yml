@@ -4,18 +4,24 @@ branches:
     - master
 
 # System part
-matrix:
-  include:
-    - os: linux
-
 language: python
+
+os:
+  - linux
+  # - osx
+  # - windows
 
 python:
   - "3.6"
-  - "3.6-dev"  # 3.6 development branch
-  # - "3.7-dev"  # 3.7 development branch
 
+  # Windows
 cache: pip
+
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install pyqt5 ; fi
+
 
 install:
   - pip install -e .

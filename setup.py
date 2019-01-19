@@ -54,7 +54,7 @@ try:
             'release': ('setup.py', RELEASE)
         }
     }
-except ModuleNotFoundError:
+except Exception:
     cmdclass = {}
     command_options = {}
 
