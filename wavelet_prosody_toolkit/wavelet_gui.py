@@ -3,12 +3,20 @@
 """
 AUTHOR
     - Antti Suni <antti.suni@helsinki.fi>
+    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
 
 DESCRIPTION
+    usage: wavelet_gui [-h] [-v] [-c CONFIG]
+
+    GUI application to analyze prosody using wavelets.
+
+    optional arguments:
+      -h, --help            		show this help message and exit
+      -v, --verbosity       		increase output verbosity
+      -c CONFIG, --config CONFIG	configuration file
 
 LICENSE
-    This script is in the public domain, free from copyrights or restrictions.
-    Created: 21 January 2018
+    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """
 
 import sys
@@ -1051,7 +1059,7 @@ def main():
     """Entry point which start the QT application
     """
     try:
-        parser = argparse.ArgumentParser(description="")
+        parser = argparse.ArgumentParser(description="GUI application to analyze prosody using wavelets.")
 
         # Add options
         parser.add_argument("-v", "--verbosity", action="count", default=0,

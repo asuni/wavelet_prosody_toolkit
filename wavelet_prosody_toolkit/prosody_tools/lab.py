@@ -1,4 +1,17 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
+"""
+AUTHOR
+    - Antti Suni <antti.suni@helsinki.fi>
+    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
+
+DESCRIPTION
+    This module provide routines to deal with annotation in TextGrid or HTK label formats
+
+LICENSE
+    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+"""
 
 def read_textgrid(filename, sample_rate=200):
     import tgt

@@ -29,7 +29,7 @@ optional arguments:
 
 
 LICENSE
-    See LICENSE
+    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """
 
 import sys
@@ -100,7 +100,7 @@ def apply_configuration(current_configuration, updating_part):
 
     return current_configuration
 
-  
+
 def load_f0(input_file, binary_mode=False, configuration=None):
     """Load the f0 from a text file or extract it from a wav file
 
@@ -136,7 +136,7 @@ def load_f0(input_file, binary_mode=False, configuration=None):
         raw_f0 = f0_processing.extract_f0(wav_form, fs,
                                           configuration["f0"]["min_f0"],
                                           configuration["f0"]["max_f0"])
-        
+
 
     return raw_f0
 
@@ -256,8 +256,8 @@ def run():
             plt.plot(scales[i] + max(rec)*1.5 + i*75,
                      color="blue", alpha=0.5)
             #plt.plot(scales[len(scales)-i-1] + max(rec)*1.5 + i*75,
-            
-            
+
+
 
         if args.mode == 0:
             plt.subplot(nb_sub, 1, 3, sharex=ax)

@@ -1,6 +1,17 @@
-"""Module which provides continuous wavelet transform (cwt) analysis/synthesis routines
-"""
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
+"""
+AUTHOR
+    - Antti Suni <antti.suni@helsinki.fi>
+    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
+
+DESCRIPTION
+    Module which provides continuous wavelet transform (cwt) analysis/synthesis routines
+
+LICENSE
+    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+"""
 
 from numpy import array,concatenate, sqrt, pad, mean, std, real, nan, zeros, nanmean, nanstd, pi, around
 

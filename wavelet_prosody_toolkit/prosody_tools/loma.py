@@ -1,6 +1,18 @@
-"""Module which provides Line Of Maximum Amplitude (loma) related routines
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 """
+AUTHOR
+    - Antti Suni <antti.suni@helsinki.fi>
+    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
+
+DESCRIPTION
+    Module which provides Line Of Maximum Amplitude (loma) related routines
+
+LICENSE
+    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+"""
+
 import numpy as np
 from operator import itemgetter
 

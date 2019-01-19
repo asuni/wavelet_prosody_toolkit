@@ -1,3 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+AUTHOR
+    - Antti Suni <antti.suni@helsinki.fi>
+    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
+
+DESCRIPTION
+    Module which provides the energy routines to be able to apply a wavelet analysis
+
+LICENSE
+    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+"""
+
 import numpy as np
 from . import smooth_and_interp, misc
 

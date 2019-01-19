@@ -1,4 +1,17 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+AUTHOR
+    - Antti Suni <antti.suni@helsinki.fi>
+    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
+
+DESCRIPTION
+    Setup script file
+
+LICENSE
+    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+"""
 
 # Needed imports
 from setuptools import setup, find_packages
@@ -30,7 +43,7 @@ DESCRIPTION = 'Prosody wavelet analysis toolkit'
 AUTHOR = 'Antti Suni'
 
 
-# For documentation => sphinx
+# If sphinx available, enable documentation building
 try:
     from sphinx.setup_command import BuildDoc
     cmdclass = {'build_sphinx': BuildDoc}

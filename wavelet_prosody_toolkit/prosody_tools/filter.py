@@ -1,7 +1,18 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Butter filter utilities
 
-This module contains butter filter help functions copied from http://scipy-cookbook.readthedocs.io/items/ButterworthBandpass.html
+"""
+AUTHOR
+    - Antti Suni <antti.suni@helsinki.fi>
+    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
+
+DESCRIPTION
+    Butter filter utilities
+
+    This module contains butter filter help functions copied from http://scipy-cookbook.readthedocs.io/items/ButterworthBandpass.html
+
+LICENSE
+    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """
 
 from scipy.signal import butter, lfilter

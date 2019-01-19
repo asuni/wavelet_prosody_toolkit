@@ -1,5 +1,17 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
+"""
+AUTHOR
+    - Antti Suni <antti.suni@helsinki.fi>
+    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
 
+DESCRIPTION
+    Module which a default pitch tracker
+
+LICENSE
+    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+"""
 
 # Logging
 import logging
@@ -7,12 +19,10 @@ logger = logging.getLogger(__name__)
 
 import numpy as np
 from . import misc, cwt_utils, filter, f0_processing, smooth_and_interp
-#from prosody_tools import misc, cwt_utils, filter, f0_processing, smooth_and_interp
 
 import sys
 from scipy.io import wavfile
 import scipy.signal
-
 
 
 def _get_f0(spec, energy, min_hz, max_hz, thresh, sil_thresh):

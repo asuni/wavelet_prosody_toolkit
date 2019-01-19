@@ -33,9 +33,8 @@ optional arguments:
   -f SCALE_FACTOR, --scale-factor SCALE_FACTOR
                         Scaling factor
 
-
 LICENSE
-	See LICENSE
+    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """
 
 # System
