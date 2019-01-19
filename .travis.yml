@@ -1,0 +1,22 @@
+# SCM part
+branches:
+  only:
+    - master
+
+# System part
+matrix:
+  include:
+    - os: linux
+
+language: python
+
+python:
+  - "3.6"
+  - "3.7"
+
+
+install:
+  - python setup.py install --user
+
+script:
+  - bash test/run_test.sh
