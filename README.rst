@@ -7,6 +7,10 @@ Wavelet prosody analyzer
 
 antti.suni@helsinki.fi
 
+|screenshot|
+
+.. |screenshot| image:: screenshot.png
+
 Description
 -----------
 
