@@ -39,8 +39,10 @@ EXTRA_REQUIREMENTS = {
 NAME = 'wavelet-prosody-toolkit'
 VERSION = '1.0b1'
 RELEASE = '1.0'
-DESCRIPTION = 'Prosody wavelet analysis toolkit'
 AUTHOR = 'Antti Suni'
+DESCRIPTION = 'Prosody wavelet analysis toolkit'
+with open("README.rst", "r") as fh:
+    LONG_DESCRIPTION = fh.read()
 
 
 # If sphinx available, enable documentation building
@@ -63,10 +65,16 @@ setup(
     # Project info.
     name=NAME,
     version=RELEASE,
+    url="https://github.com/asuni/wavelet_prosody_toolkit",
 
     # Author info.
     author=AUTHOR,
     author_email='antti.suni@helsinki.fi',
+
+    # Description part
+    description=DESCRIPTION,
+    long_description=LONG_DESCRIPTION,
+    long_description_content_type="text/x-rst",
 
     # Install requirements
     install_requires=REQUIREMENTS,
