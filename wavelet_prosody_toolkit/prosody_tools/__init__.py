@@ -10,5 +10,5 @@ DESCRIPTION
     Package which provides the modules to achieve wavelet analysis of speech prosody.
 
 LICENSE
-    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+    See https://github.com/asuni/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """

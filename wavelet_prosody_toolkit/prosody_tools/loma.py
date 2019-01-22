@@ -10,7 +10,7 @@ DESCRIPTION
     Module which provides Line Of Maximum Amplitude (loma) related routines
 
 LICENSE
-    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+    See https://github.com/asuni/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """
 
 import numpy as np

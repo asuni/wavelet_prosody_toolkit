@@ -10,7 +10,7 @@ DESCRIPTION
     Module which a default pitch tracker
 
 LICENSE
-    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+    See https://github.com/asuni/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """
 
 # Logging

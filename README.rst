@@ -1,7 +1,7 @@
 |travis-badge|_
 
-.. |travis-badge| image:: https://travis-ci.org/seblemaguer/wavelet_prosody_toolkit.svg?branch=master
-.. _travis-badge: https://travis-ci.org/seblemaguer/wavelet_prosody_toolkit
+.. |travis-badge| image:: https://travis-ci.org/asuni/wavelet_prosody_toolkit.svg?branch=master
+.. _travis-badge: https://travis-ci.org/asuni/wavelet_prosody_toolkit
 
 Wavelet prosody analyzer
 ========================
@@ -131,7 +131,7 @@ Additional customization of the input signals and wavelet analysis is possible b
 
 	  wavelet_prosody_toolkit/configs/default.yaml
 
-You can view an online version here: https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/wavelet_prosody_toolkit/configs/default.yaml
+You can view an online version here: https://github.com/asuni/wavelet_prosody_toolkit/blob/master/wavelet_prosody_toolkit/configs/default.yaml
 
 You are recommended to make a copy of the default.yaml file (to e.g. myconfig.yaml), and modify the copy.  To apply the modified configuration, start the program by
 

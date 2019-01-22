@@ -10,7 +10,7 @@ DESCRIPTION
     Module which provides continuous wavelet transform (cwt) analysis/synthesis routines
 
 LICENSE
-    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+    See https://github.com/asuni/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """
 
 from numpy import array,concatenate, sqrt, pad, mean, std, real, nan, zeros, nanmean, nanstd, pi, around

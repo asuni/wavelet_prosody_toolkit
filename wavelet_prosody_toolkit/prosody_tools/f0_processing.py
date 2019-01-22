@@ -10,7 +10,7 @@ DESCRIPTION
     Module which provides the F0 routines to be able to apply a wavelet analysis
 
 LICENSE
-    See https://github.com/seblemaguer/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+    See https://github.com/asuni/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """
 
 
