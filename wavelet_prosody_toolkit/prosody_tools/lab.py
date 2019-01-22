@@ -4,7 +4,7 @@
 """
 AUTHOR
     - Antti Suni <antti.suni@helsinki.fi>
-    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
+    - Sébastien Le Maguer <lemagues@tcd.ie>
 
 DESCRIPTION
     This module provide routines to deal with annotation in TextGrid or HTK label formats

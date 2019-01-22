@@ -3,7 +3,7 @@
 """
 AUTHOR
     - Antti Suni <antti.suni@helsinki.fi>
-    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
+    - Sébastien Le Maguer <lemagues@tcd.ie>
 
 DESCRIPTION
     usage: wavelet_gui [-h] [-v] [-c CONFIG]

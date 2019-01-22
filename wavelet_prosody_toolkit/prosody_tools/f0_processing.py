@@ -4,7 +4,7 @@
 """
 AUTHOR
     - Antti Suni <antti.suni@helsinki.fi>
-    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
+    - Sébastien Le Maguer <lemagues@tcd.ie>
 
 DESCRIPTION
     Module which provides the F0 routines to be able to apply a wavelet analysis

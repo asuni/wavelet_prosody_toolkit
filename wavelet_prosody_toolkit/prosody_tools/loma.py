@@ -4,7 +4,7 @@
 """
 AUTHOR
     - Antti Suni <antti.suni@helsinki.fi>
-    - Sébastien Le Maguer <slemaguer@coli.uni-saarland.de>
+    - Sébastien Le Maguer <lemagues@tcd.ie>
 
 DESCRIPTION
     Module which provides Line Of Maximum Amplitude (loma) related routines
