@@ -33,7 +33,12 @@ REQUIREMENTS = [
 ]
 
 EXTRA_REQUIREMENTS = {
-    'reaper': ["pyreaper"]
+    'reaper': ["pyreaper"],
+    'docs': [
+        'sphinx >= 1.4',
+        'sphinx_rtd_theme',
+        "numpydoc"
+    ]
 }
 
 NAME = 'wavelet-prosody-toolkit'
