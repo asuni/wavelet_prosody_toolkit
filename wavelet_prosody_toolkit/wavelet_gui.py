@@ -679,7 +679,6 @@ class SigWindow(QtWidgets.QDialog):
 
             # get results
             feats = [unicode(self.filelist.currentItem().text())]
-            self.prominences = np.array_str(self.prominences[:, 1], precision=3)
             for p in self.prominences:
                 feats.append("%0.5f" % p[1])
 
