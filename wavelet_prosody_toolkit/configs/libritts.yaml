@@ -1,0 +1,52 @@
+f0:
+  use_existing_f0: false                   # do not perform pitch tracking if .f0 file exists
+  pitch_tracker: "inst_freq"               # inst_freq (our algorithm) or REAPER (from google)
+  min_f0: 50
+  max_f0: 400
+  voicing_threshold: 20                    # from 0 (all voiced) to 100 (no voicing)
+  interpolation_method: "true_envelope"    # fill unvoiced sections; "linear", "pchip" or "true_envelope"
+
+energy:
+  # subband for energy calculation (in hz)
+  band_min: 400
+  band_max: 4000
+  calculation_method: "rms"                # 'rms', 'hilbert' or 'true_envelope'  (root mean square, hilbert envelope, or true envelope -inspired method)
+  smooth_energy: True                      # smoothing reduces the effect of voicing related variation in energy contour
+
+
+duration:
+  acoustic_estimation: False               # estimate speech rate from signal using wavelet transform of energy
+  delta_duration: False                    # use differential duration signal, useful for boundary detection
+  bump: False                              # more lively signal by emphasizing the differences
+                                           # between adjacent unit durations
+  duration_tiers: ["words", "phones"]
+  weights: [0.5, 0.5]                      # weight for selected duration tiers
+  #duration_tiers: ["words"]
+  silence_symbols: ["#", "!pau", "<s>", "pau","sp", "!sil", "sil", "", " ","<p>", "<p:>", "." ,",","?"]
+  linear: False                            # linear or logarithmic durations 
+feature_combination:
+  type: "product"                          # sum or product
+  detrend: True                            # detrend can be used to remove typical downdrift during utterance, mainly produces more balanced looking scalograms
+  weights:
+    f0: 1.0
+    energy: 0.5
+    duration: 1.0
+
+labels:
+  annotation_tier: "words"                # adjust these to your annotation scheme
+
+wavelet:
+  mother_wavelet: "mexican_hat"           # mexican_hat, morlet or paul
+  period: 3                               # applies to morlet and paul wavelets (periods 2 - 5 are reasonable)
+
+  scale_distance: 0.25                    # distance between adjacent scales in octaves, (0.25 means 4 scales per octave)
+  num_scales: 40                          # number of wavelet scales
+  magnitude: False                        # for purposes other than prosodic event annotation,
+                                          # examinining wavelet magnitude might be useful (complex wavelets Morlet or Paul should be used)
+
+# lines of maximum amplitude, defined as octaves below and above the measured unit scale
+loma:
+  prom_start: -2                          # -3 meaning three octaves below unit scale
+  prom_end: 1
+  boundary_start: -1
+  boundary_end: 2                         # one octave higher than unit scale
