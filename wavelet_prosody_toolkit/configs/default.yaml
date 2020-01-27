@@ -12,16 +12,20 @@ energy:
   band_max: 5000
   calculation_method: "rms"                # 'rms', 'hilbert' or 'true_envelope'  (root mean square, hilbert envelope, or true envelope -inspired method)
   smooth_energy: True                      # smoothing reduces the effect of voicing related variation in energy contour
-
+  
 
 duration:
   acoustic_estimation: False               # estimate speech rate from signal using wavelet transform of energy
   delta_duration: False                    # use differential duration signal, useful for boundary detection
-  duration_tiers: ["segments", "words"]
+  duration_tiers: ["phones","words"]
+  weights: [0.5, 0.5]                      # weight for selected duration tiers
   silence_symbols: ["#", "!pau", "<s>", "pau", "!sil", "sil", "", " ","<p>", "<p:>", "." ,",","?"]
+  linear: False                            # linear or logarithmic durations
+  bump: False                              # more lively signal by emphasizing the differences
+                                           # between adjacent unit duration
 
 feature_combination:
-  type: "product"                          # sum or product
+  type: "sum"                          # sum or product
   detrend: True                            # detrend can be used to remove typical downdrift during utterance, mainly produces more balanced looking scalograms
   weights:
     f0: 1.0
