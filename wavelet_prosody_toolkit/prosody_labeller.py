@@ -2,329 +2,402 @@
 # -*- coding: utf-8 -*-
 """
 AUTHOR
-    - Antti Suni <antti.suni@helsinki.fi>
-    - Sébastien Le Maguer <lemagues@tcd.ie>
+
+    Sébastien Le Maguer <lemagues@tcd.ie>
 
 DESCRIPTION
 
-usage: prosody_labeller.py [-h] [-v] [-H] [-P] [-l LEVEL] [-L LABEL]
-                           [-n NB_SCALES] [-d SCALE_DIST] [-f SCALE_FACTOR]
-                           input_file output_file
-
-Prosody events labeller tool based on wavelet transformation
-
-positional arguments:
-  - input_file            input wave file to analyze (a label file with the same basename should be available)
-  - output_file           Output file which contains the events in a csv format
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -v, --verbosity       Increase output verbosity
-  -H, --with-header     Also print the header
-  -P, --plot            Plot the results
-  -l LEVEL, --level LEVEL
-                        The analyzed level
-  -L LABEL, --label LABEL
-                        Alternative label filename
-  -n NB_SCALES, --nb-scales NB_SCALES
-                        The number of scales for the cwt
-  -d SCALE_DIST, --scale-dist SCALE_DIST
-                        The distance between scales
-  -f SCALE_FACTOR, --scale-factor SCALE_FACTOR
-                        Scaling factor
-
 LICENSE
-    See https://github.com/asuni/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+    This script is in the public domain, free from copyrights or restrictions.
+    Created: 27 January 2020
 """
 
-# System
+# System/default
 import sys
 import os
-import os.path
-import warnings
-
-# Debug
-import traceback
+import glob
 
 # Arguments
 import argparse
 
-# Logging
+# Messaging/logging
+import traceback
 import time
 import logging
-logging.basicConfig(level=logging.WARN)
+import copy
 
-# extraction and preprocessing of prosodic signals
-from wavelet_prosody_toolkit.prosody_tools import f0_processing, energy_processing, duration_processing, smooth_and_interp
+# Configuration
+import yaml
+from collections import defaultdict
 
-# labels
-from wavelet_prosody_toolkit.prosody_tools import lab
-
-# wavelet
-from wavelet_prosody_toolkit.prosody_tools import cwt_utils, loma, misc
-
+# Math and plotting
 import numpy as np
+import scipy.ndimage
+import matplotlib.pyplot as plt
 
-try:
-    import pylab
-except Exception as ex:
-    logging.info("pylab is not available, so plotting is not available")
+# Parallel job managment
+from joblib import Parallel, delayed
 
+# acoustic features
+from wavelet_prosody_toolkit.prosody_tools import energy_processing
+from wavelet_prosody_toolkit.prosody_tools import f0_processing
+from wavelet_prosody_toolkit.prosody_tools import duration_processing
 
-# List of logging levels used to setup everything using verbose option
-LOG_LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
+# helpers
+from wavelet_prosody_toolkit.prosody_tools import misc
+from wavelet_prosody_toolkit.prosody_tools import smooth_and_interp
 
+# wavelet transform
+from wavelet_prosody_toolkit.prosody_tools import cwt_utils, loma, lab
+
+###############################################################################
+# global constants
+###############################################################################
+LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
 ###############################################################################
 # Functions
 ###############################################################################
-def extract_signal_prosodic_feature(input_file):
-    """Extract energy (smoothed) and pitch from an input wav file.
+def get_logger(verbosity, log_file):
+
+    # create logger and formatter
+    logger = logging.getLogger()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # Verbose level => logging level
+    log_level = verbosity
+    if (log_level >= len(LEVEL)):
+        log_level = len(LEVEL) - 1
+        logger.setLevel(log_level)
+        logging.warning("verbosity level is too high, I'm gonna assume you're taking the highest (%d)" % log_level)
+    else:
+        logger.setLevel(LEVEL[log_level])
+
+    # create console handler
+    ch = logging.StreamHandler()
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    # create file handler
+    if log_file is not None:
+        fh = logging.FileHandler(log_file)
+        logger.addHandler(fh)
+
+    return logger
+
+
+def apply_configuration(current_configuration, updating_part):
+    """Utils to update the current configuration using the updating part
 
     Parameters
     ----------
-    input_file: string
-        Filename of the input wav file
+    current_configuration: dict
+        The current state of the configuration
 
+    updating_part: dict
+        The information to add to the current configuration
+
+    Returns
+    -------
+    dict
+       the updated configuration
     """
-    # read waveform
+    if not isinstance(current_configuration, dict):
+        return updating_part
+
+    if current_configuration is None:
+        return updating_part
+
+    if updating_part is None:
+        return current_configuration
+
+    for k in updating_part:
+        if k not in current_configuration:
+            current_configuration[k] = updating_part[k]
+        else:
+            current_configuration[k] = apply_configuration(current_configuration[k], updating_part[k])
+
+    return current_configuration
+
+
+
+def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot=False):
+
+    # Load the wave file
+    logger.info("Analyzing %s starting..." % input_file)
     orig_sr, sig = misc.read_wav(input_file)
 
     # extract energy
-    energy = energy_processing.extract_energy(sig, orig_sr, 300, 5000)
-    energy_smooth = smooth_and_interp.peak_smooth(energy, 30, 3)
+    energy = energy_processing.extract_energy(sig, orig_sr,
+                                              cfg["energy"]["band_min"],
+                                              cfg["energy"]["band_max"],
+                                              cfg["energy"]["calculation_method"])
+    energy = np.cbrt(energy+1)
+    if cfg["energy"]["smooth_energy"]:
+        energy = smooth_and_interp.peak_smooth(energy, 30, 3)  # FIXME: 30? 3?
+        energy = smooth_and_interp.smooth(energy, 10)
 
     # extract f0
-    #raw_pitch = f0_processing.extract_f0(sig, orig_sr)
-    raw_pitch = f0_processing.extract_f0(input_file) #, orig_sr)
+    raw_pitch = f0_processing.extract_f0(sig, orig_sr,
+                                         f0_min=cfg["f0"]["min_f0"],
+                                         f0_max=cfg["f0"]["max_f0"],
+                                         voicing=cfg["f0"]["voicing_threshold"],
+                                         #harmonics=cfg["f0"]["harmonics"],
+                                         configuration=cfg["f0"]["pitch_tracker"])
+    # interpolate, stylize
     pitch = f0_processing.process(raw_pitch)
 
-    return (energy_smooth, pitch)
+    # extract speech rate
+    rate = np.zeros(len(pitch))
 
 
-def extract_speech_rate(labels):
-    """Extract speech rate for a give list of labels.
+    # Get annotations (if available)
+    tiers = []
+    if annotation_dir is None:
+        annotation_dir = os.path.dirname(input_file)
+    basename = os.path.splitext(os.path.basename(input_file))[0]
+    grid =  os.path.join(annotation_dir, "%s.TextGrid" % basename)
+    if os.path.exists(grid):
+        tiers = lab.read_textgrid(grid)
+    else:
+        grid =  os.path.join(annotation_dir, "%s.lab" % basename)
+        if not os.path.exists(grid):
+            raise Exception("There is no annotations associated with %s" % input_file)
+        tiers = lab.read_htk_label(grid)
 
-    Parameters
-    ----------
-    labels: list of tuple (float, float, string)
-        list of labels which are lists of 3 elements [start, end, description]
+    # Extract duration
+    if len(tiers) > 0:
+        dur_tiers = []
+        for level in cfg["duration"]["duration_tiers"]:
+            assert(level.lower() in tiers), level+" not defined in tiers: check that duration_tiers in config match the actual textgrid tiers"
+            try:
+                dur_tiers.append(tiers[level.lower()])
+            except:
+                print("\nerror: "+"\""+level+"\"" +" not in labels, modify duration_tiers in config\n\n")
+                raise
 
-    """
-     # extract speech rate (from signal)
-    try:
-        rate = duration_processing.get_duration_signal([labels]) #, labels['segments']])
-    except:
+    if not cfg["duration"]["acoustic_estimation"]:
+        rate = duration_processing.get_duration_signal(dur_tiers,
+                                                       weights=cfg["duration"]["weights"],
+                                                       linear=cfg["duration"]["linear"],
+                                                       sil_symbols=cfg["duration"]["silence_symbols"],
+                                                       bump = cfg["duration"]["bump"])
+
+    else:
         rate = duration_processing.get_rate(energy)
         rate = smooth_and_interp.smooth(rate, 30)
-    rate = np.diff(rate)
 
-    return rate
+    if cfg["duration"]["delta_duration"]:
+            rate = np.diff(rate)
 
+    # Combine signals
+    min_length = np.min([len(pitch), len(energy), len(rate)])
+    pitch = pitch[:min_length]
+    energy = energy[:min_length]
+    rate = rate[:min_length]
 
-def extract_params(input_file, labels):
-    """Extract prosodic params from wav file and corresponding labels.
+    if cfg["feature_combination"]["type"] == "product":
+        pitch = misc.normalize_minmax(pitch) ** cfg["feature_combination"]["weights"]["f0"]
+        energy = misc.normalize_minmax(energy) ** cfg["feature_combination"]["weights"]["energy"]
+        rate =  misc.normalize_minmax(rate) ** cfg["feature_combination"]["weights"]["duration"]
+        params = pitch * energy * rate
 
-    Parameters
-    ----------
-    input_file: string
-        Filename of the input wav file
-    labels: list of tuple (float, float, string)
-        list of labels which are lists of 3 elements [start, end, description]
+    else:
+        params = misc.normalize_std(pitch) * cfg["feature_combination"]["weights"]["f0"] + \
+                 misc.normalize_std(energy) * cfg["feature_combination"]["weights"]["energy"] + \
+                 misc.normalize_std(rate) * cfg["feature_combination"]["weights"]["duration"]
 
-    """
-     # Extract acoustic part from input wav file.
-    (energy_smooth, pitch) = extract_signal_prosodic_feature(input_file)
+    if cfg["feature_combination"]["detrend"]:
+         params = smooth_and_interp.remove_bias(params, 800)
 
-    # Extract speech rate from labels
-    rate = extract_speech_rate(labels)
-
-    # combine feats
-    (pitch, energy_smooth, rate) = misc.match_length([pitch, energy_smooth, rate])
-    params = misc.normalize_std(pitch)+ \
-             misc.normalize_std(energy_smooth)+ \
-             misc.normalize_std(rate)
     params = misc.normalize_std(params)
 
-    return (params, pitch, energy_smooth, rate)
+
+    # CWT analysis
+    (cwt, scales, freqs) = cwt_utils.cwt_analysis(params,
+                                                  mother_name=cfg["wavelet"]["mother_wavelet"],
+                                                  period=cfg["wavelet"]["period"],
+                                                  num_scales=cfg["wavelet"]["num_scales"],
+                                                  scale_distance=cfg["wavelet"]["scale_distance"],
+                                                  apply_coi=True)
+    cwt = np.real(cwt)
+    scales *= 200 # FIXME: why 200?
 
 
-def label_prosody(scales, cwt, labels):
-    """Label prosody event based on wavelet transform
+    # Compute lines of maximum amplitude
+    assert(cfg["labels"]["annotation_tier"].lower() in tiers), \
+        cfg["labels"]["annotation_tier"]+" not defined in tiers: check that annotation_tier in config is found in the textgrid tiers"
+    labels = tiers[cfg["labels"]["annotation_tier"].lower()]
 
-    Parameters
-    ----------
-    scales: vector of float (?)
-        The wavelet scales
-    cwt: matrix of float (?)
-        The wavelet coefficients
-    labels: list of tuple (float, float, string)
-        List of labels which are lists of 3 elements [start, end, description]
+    # get scale corresponding to avg unit length of selected tier
+    n_scales = cfg["wavelet"]["num_scales"]
+    scale_dist = cfg["wavelet"]["scale_distance"]
+    scales = (1./freqs*200)*0.5 # FIXME: hardcoded vales
+    unit_scale = misc.get_best_scale2(scales, labels)
 
-    """
-    # get scale corresponding to word length
-    level_scale = misc.get_best_scale(np.real(cwt), len(labels))
+    # Define the scale information (FIXME: description)
+    pos_loma_start_scale = unit_scale + int(cfg["loma"]["prom_start"]/scale_dist)  # three octaves down from average unit length
+    pos_loma_end_scale = unit_scale + int(cfg["loma"]["prom_end"]/scale_dist)
+    neg_loma_start_scale = unit_scale + int(cfg["loma"]["boundary_start"]/scale_dist)  # two octaves down
+    neg_loma_end_scale = unit_scale + int(cfg["loma"]["boundary_end"]/scale_dist)  # one octave up
 
+    pos_loma = loma.get_loma(cwt, scales, pos_loma_start_scale, pos_loma_end_scale)
+    neg_loma = loma.get_loma(-cwt, scales, neg_loma_start_scale, neg_loma_end_scale)
 
-    pos_loma = loma.get_loma(np.real(cwt),scales, level_scale-4, level_scale+4)
-    neg_loma = loma.get_loma(-np.real(cwt),scales, level_scale-4, level_scale+4)
-
-    prominences = loma.get_prominences(pos_loma, labels)
-    boundaries = loma.get_boundaries(prominences, neg_loma, labels)
-
-    return (prominences, boundaries, pos_loma, neg_loma)
-
-
-def plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominences, pos_loma, neg_loma):
-    """Plot all the elements
-
-    Parameters
-    ----------
-    labels: list of tuple (float, float, string)
-        List of labels which are lists of 3 elements [start, end, description]
-    rate: type
-        description
-    energy_smooth: type
-        description
-    pitch: type
-        description
-    params: type
-        description
-    cwt: type
-        description
-    boundaries: type
-        description
-    prominences: type
-        description
-    pos_loma: type
-        description
-    neg_loma: type
-        description
+    max_loma = loma.get_prominences(pos_loma, labels)
+    prominences = np.array(max_loma)
+    boundaries = np.array(loma.get_boundaries(max_loma, neg_loma, labels))
 
 
-    """
-    f, axarr = pylab.subplots(2, sharex=True)
-    axarr[0].set_title("Acoustic Features")
-    shift = 0
-    axarr[0].plot(params, label="combined")
+    # output results
+    if output_dir is None:
+        output_dir = os.path.dirname(input_file)
+    os.makedirs(output_dir, exist_ok=True)
 
-    shift = 4
-    axarr[0].plot(misc.normalize_std(rate)+shift, label="rate (shift=%d)" % shift)
+    basename = os.path.splitext(os.path.basename(input_file))[0]
+    output_filename = os.path.join(output_dir, "%s.prom" % basename)
+    logger.info("Saving %s..." % (output_filename))
+    loma.save_analyses(output_filename,
+                       labels,
+                       prominences,
+                       boundaries)
 
-    shift = 7
-    axarr[0].plot(misc.normalize_std(energy_smooth)+shift, label="energy(shift=%d)" % shift)
+    # Plotting
+    if plot:
+        fig, ax =  plt.subplots(6, 1, sharex=True,
+                                figsize=(len(labels) / 10 * 8, 8),
+                                gridspec_kw = {'height_ratios':[1, 1, 1, 1, 3, 1]})
+        plt.subplots_adjust(hspace=0.5)
 
-    shift = 10
-    axarr[0].plot(misc.normalize_std(pitch)+shift, label="f0 (shift=%d)" % shift)
-    axarr[0].set_xlim(0,len(params))
-    l = axarr[0].legend(fancybox=True)
-    l.get_frame().set_alpha(0.75)
+        # Plot individual signals
+        ax[0].plot(raw_pitch, linewidth=1)
+        # ax[0].plot(pitch, linewidth=1) # FIXME: do we really need this?
+        ax[0].set_title("pitch")
 
-    axarr[1].set_title("Continuous Wavelet Transform")
-    axarr[1].contourf(cwt, 100)
-    loma.plot_loma(pos_loma, color='black', fig=axarr[1])
-    loma.plot_loma(neg_loma, color='white', fig=axarr[1])
+        ax[1].plot(energy, linewidth=1)
+        ax[1].set_title("energy")
 
-    lab.plot_labels(labels, ypos=1., prominences= np.array(prominences)[:,1],  fig=axarr[1])
-    pylab.show()
+        ax[2].plot(rate, linewidth=1)
+        ax[2].set_title("speech rate")
+
+        # Plot combined signal
+        ax[3].plot(params, linewidth=1)
+        ax[3].set_title("combined signal")
+        plt.xlim(0, len(params))
+
+        # Wavelet and loma
+        cwt[cwt>0] = np.log(cwt[cwt>0]+1.)
+        cwt[cwt<-0.1] = -0.1
+        ax[4].contourf(cwt,100, cmap="jet")
+        loma.plot_loma(pos_loma, ax[4], color="black")
+        loma.plot_loma(neg_loma, ax[4], color="white")
+        ax[4].set_title("Wavelet & LOMA")
+
+        # Add labels
+        prom_text =  prominences[:, 1]/(np.max(prominences[:, 1]))*2.5 + 0.5
+        lab.plot_labels(labels, ypos=0.5, size=6, prominences=prom_text, fig=ax[5], boundary=True)
+        for i in range(0, len(labels)):
+            for a in [0, 1, 2, 3, 5]:
+                ax[a].axvline(x=labels[i][1], color='black',
+                              linestyle="-", linewidth=boundaries[i][-1] * 4,
+                              alpha=0.5)
+        plt.xlim(0, cwt.shape[1])
+
+        # Save plot
+        output_filename = os.path.join(output_dir, "%s.png" % basename)
+        logger.info("Save plot %s" % output_filename)
+        fig.savefig(output_filename, bbox_inches='tight', dpi=400)
+
+def analysis_batch_wrap(input_file, cfg, annotation_dir=None, output_dir=None, plot=False, verbosity=logging.WARNING, log_file=None):
+
+    # Get the logger
+    logger = get_logger(verbosity, log_file)
+
+    # Encapsulate running
+    try:
+        analysis(input_file, cfg, logger, annotation_dir, output_dir, plot)
+    except Exception as ex:
+        logging.error(str(ex))
+        traceback.print_exc(file=sys.stderr)
 
 
 ###############################################################################
 # Main function
 ###############################################################################
-def run():
-    """Main function which wraps the prosody labeller tool
-
+def main():
+    """Main entry function
     """
-    global args
+    global args, logger
 
-    # Extract labels
-    if args.label:
-        lab_f = args.label
+    # Load configuration
+    configuration = defaultdict()
+    with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/default.yaml", 'r') as f:
+        configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f, Loader=yaml.FullLoader)))
+
+    if args.config:
+        try:
+            with open(args.config, 'r') as f:
+                configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f, Loader=yaml.FullLoader)))
+        except IOError as ex:
+            print("configuration file " + args.config + " could not be loaded:")
+
+            sys.exit(1)
+    logger.debug("Current confirugration:")
+    logger.debug(configuration)
+
+    # Get the number of jobs
+    nb_jobs = args.nb_jobs
+
+    # Loading files
+    input_files = glob.glob(args.input_dir + "/*.wav")
+    if len(input_files) == 1:
+        nb_jobs = 1
+
+    if nb_jobs > 1:
+        Parallel(n_jobs=nb_jobs)(delayed(analysis_batch_wrap)(f, configuration, args.annotation_directory, args.output_directory, args.plot, args.verbosity, args.log_file) for f in input_files)
     else:
-        lab_f = os.path.splitext(args.input_file)[0]+".lab"
-
-    if os.path.exists(lab_f):
-        labels = lab.read_htk_label(lab_f)
-        labels = labels[args.level] # Filter by level
-    else:
-        logging.error("Label file \"%s\" doesn't exist" % lab_f)
-        sys.exit(-1)
-
-    # Extract parameters
-    (params, pitch, energy_smooth, rate) = extract_params(args.input_file, labels)
-
-    # perform wavelet transform
-    (cwt,scales) = cwt_utils.cwt_analysis(params, mother_name="mexican_hat", period=2,
-                                          num_scales=args.nb_scales, scale_distance=args.scale_dist,
-                                          apply_coi=True)
-    scales *= args.scale_factor
-
-    # Labelling prominences and boundarys
-    (prominences, boundaries, pos_loma, neg_loma) = label_prosody(scales, cwt, labels)
-
-    print("========================================================")
-    print("label\tprominence\tboundary")
-    for i in range(0, len(labels)):
-        print("%s\t%f\t%f" %(labels[i][-1], prominences[i][-1], boundaries[i][-1]))
-
-    if args.plot:
-        warnings.simplefilter("ignore", np.ComplexWarning) # Plotting can't deal with complex, but we don't care
-        plot(labels, rate, energy_smooth, pitch, params, cwt, boundaries, prominences, pos_loma, neg_loma)
+        for f in input_files:
+            analysis(f, configuration, logger, args.annotation_directory, args.output_directory, args.plot)
 
 
 ###############################################################################
 #  Envelopping
 ###############################################################################
-def main():
-    """Entry point for the prosody labeller tool
-
-    This function is a wrapper to deal with arguments and logging.
-    """
-    global args
-
+if __name__ == '__main__':
     try:
-        parser = argparse.ArgumentParser(description="Prosody events labeller tool based on wavelet transformation")
+        parser = argparse.ArgumentParser(description="Command line application to analyze prosody using wavelets.")
 
-        # General options
+        # Add options
+        parser.add_argument("-a", "--annotation_directory", default=None, type=str,
+                            help="Annotation directory. If not specified, the tool will by default try to load annotations from the directory containing the wav files")
+        parser.add_argument("-j", "--nb_jobs", default=1, type=int,
+                            help="Define the number of jobs to run in parallel")
+        parser.add_argument("-c", "--config", default=None, type=str,
+                            help="configuration file")
+        parser.add_argument("-l", "--log_file", default=None, type=str,
+                            help="Logger file")
+        parser.add_argument("-o", "--output_directory", default=None, type=str,
+                            help="The output directory. If not specified, the tool will output the result in a .prom file in the same directory than the wave files")
+        parser.add_argument("-p", "--plot", default=False, action="store_true",
+                            help="Plot the result (the number of jobs is de facto set to 1 if activated)")
         parser.add_argument("-v", "--verbosity", action="count", default=0,
-                            help="Increase output verbosity")
-        parser.add_argument("-H", "--with-header", action="store_true",
-                            help="Also print the header")
-        parser.add_argument("-P", "--plot", action="store_true",
-                            help="Plot the results")
-        parser.add_argument("-l", "--level", default="words", help="The analyzed level")
-        parser.add_argument("-L", "--label", help="Alternative label filename")
-
-        # Scales options
-        parser.add_argument("-n", "--nb-scales", default=20, type=int,
-                            help="The number of scales for the cwt")
-        parser.add_argument("-d", "--scale-dist", default=0.5, type=float,
-                            help="The distance between scales")
-        parser.add_argument("-f", "--scale-factor", default=200, type=int,
-                            help="Scaling factor")
+                            help="increase output verbosity")
 
         # Add arguments
-        parser.add_argument("input_file", help="input wave file to analyze (a label file with the same basename should be available)")
-        parser.add_argument("output_file", help="Output file which contains the events in a csv format")
+        parser.add_argument("input_dir", help="directory with wave files to analyze (a label file with the same basename should be available)")
 
         # Parsing arguments
         args = parser.parse_args()
 
-        # Verbose level => logging level
-        log_level_idx = args.verbosity
-        if (args.verbosity > len(LOG_LEVEL)):
-            logging.warning("verbosity level is too high, I'm gonna assume you're taking the highes ")
-            log_level_idx = len(LOG_LEVEL) - 1
-            print(LOG_LEVEL[log_level_idx])
-        logging.getLogger().setLevel(LOG_LEVEL[log_level_idx])
+        # Get the logger
+        logger = get_logger(args.verbosity, args.log_file)
 
         # Debug time
         start_time = time.time()
-        logging.info("start time = " + time.asctime())
+        logger.info("start time = " + time.asctime())
 
         # Running main function <=> run application
-        run()
+        main()
 
         # Debug time
         logging.info("end time = " + time.asctime())
@@ -335,17 +408,10 @@ def main():
         sys.exit(0)
     except KeyboardInterrupt as e:  # Ctrl-C
         raise e
-    except SystemExit as e:  # sys.exit()
+    except SystemExit:  # sys.exit()
         pass
     except Exception as e:
         logging.error('ERROR, UNEXPECTED EXCEPTION')
         logging.error(str(e))
         traceback.print_exc(file=sys.stderr)
         sys.exit(-1)
-
-
-if __name__ == '__main__':
-    main()
-
-
-# prosody_labeller_command_line.py ends here
