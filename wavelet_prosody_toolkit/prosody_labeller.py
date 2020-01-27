@@ -263,26 +263,25 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
                        boundaries)
 
     # Plotting
-    if plot:
+    if plot != 0:
         fig, ax =  plt.subplots(6, 1, sharex=True,
                                 figsize=(len(labels) / 10 * 8, 8),
-                                gridspec_kw = {'height_ratios':[1, 1, 1, 1, 3, 1]})
-        plt.subplots_adjust(hspace=0.5)
+                                gridspec_kw = {'height_ratios':[1, 1, 1, 2, 4, 1]})
+        plt.subplots_adjust(hspace=0)
 
         # Plot individual signals
-        ax[0].plot(raw_pitch, linewidth=1)
-        # ax[0].plot(pitch, linewidth=1) # FIXME: do we really need this?
-        ax[0].set_title("pitch")
+        ax[0].plot(pitch, linewidth=1)
+        ax[0].set_ylabel("Pitch", rotation="horizontal", ha="right", va="center")
 
         ax[1].plot(energy, linewidth=1)
-        ax[1].set_title("energy")
+        ax[1].set_ylabel("Energy", rotation="horizontal", ha="right", va="center")
 
         ax[2].plot(rate, linewidth=1)
-        ax[2].set_title("speech rate")
+        ax[2].set_ylabel("Speech rate", rotation="horizontal", ha="right", va="center")
 
         # Plot combined signal
         ax[3].plot(params, linewidth=1)
-        ax[3].set_title("combined signal")
+        ax[3].set_ylabel("Combined \n signal", rotation="horizontal", ha="right", va="center")
         plt.xlim(0, len(params))
 
         # Wavelet and loma
@@ -291,7 +290,7 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
         ax[4].contourf(cwt,100, cmap="jet")
         loma.plot_loma(pos_loma, ax[4], color="black")
         loma.plot_loma(neg_loma, ax[4], color="white")
-        ax[4].set_title("Wavelet & LOMA")
+        ax[4].set_ylabel("Wavelet & \n LOMA", rotation="horizontal", ha="right", va="center")
 
         # Add labels
         prom_text =  prominences[:, 1]/(np.max(prominences[:, 1]))*2.5 + 0.5
@@ -303,12 +302,38 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
                               alpha=0.5)
         plt.xlim(0, cwt.shape[1])
 
-        # Save plot
-        output_filename = os.path.join(output_dir, "%s.png" % basename)
-        logger.info("Save plot %s" % output_filename)
-        fig.savefig(output_filename, bbox_inches='tight', dpi=400)
+        # Align ylabels and remove axis
+        fig.align_ylabels(ax)
+        for i in range(len(ax)-1):
+            ax[i].tick_params(
+                axis='x',          # changes apply to the x-axis
+                which='both',      # both major and minor ticks are affected
+                bottom=False,      # ticks along the bottom edge are off
+                top=False,         # ticks along the top edge are off
+                labelbottom=False) # labels along the bottom edge are off
+            ax[i].tick_params(
+                axis='y',          # changes apply to the x-axis
+                which='both',      # both major and minor ticks are affected
+                left=False,      # ticks along the bottom edge are off
+                right=False,         # ticks along the top edge are off
+                labelleft=False) # labels along the bottom edge are off
 
-def analysis_batch_wrap(input_file, cfg, annotation_dir=None, output_dir=None, plot=False, verbosity=logging.WARNING, log_file=None):
+        ax[len(ax)-1].tick_params(
+            axis='y',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            left=False,      # ticks along the bottom edge are off
+            right=False,         # ticks along the top edge are off
+            labelleft=False) # labels along the bottom edge are off
+
+        # Plot
+        if plot < 0:
+            output_filename = os.path.join(output_dir, "%s.png" % basename)
+            logger.info("Save plot %s" % output_filename)
+            fig.savefig(output_filename, bbox_inches='tight', dpi=400)
+        elif plot > 0:
+            plt.show()
+
+def analysis_batch_wrap(input_file, cfg, annotation_dir=None, output_dir=None, plot=0, verbosity=logging.WARNING, log_file=None):
 
     # Get the logger
     logger = get_logger(verbosity, log_file)
@@ -349,15 +374,23 @@ def main():
     nb_jobs = args.nb_jobs
 
     # Loading files
-    input_files = glob.glob(args.input_dir + "/*.wav")
+    if os.path.isfile(args.input):
+        input_files = [args.input]
+    else:
+        input_files = glob.glob(args.input + "/*.wav")
     if len(input_files) == 1:
         nb_jobs = 1
 
+    plot_flag = 0
     if nb_jobs > 1:
-        Parallel(n_jobs=nb_jobs)(delayed(analysis_batch_wrap)(f, configuration, args.annotation_directory, args.output_directory, args.plot, args.verbosity, args.log_file) for f in input_files)
+        if args.plot:
+            plot_flag = -1
+        Parallel(n_jobs=nb_jobs)(delayed(analysis_batch_wrap)(f, configuration, args.annotation_directory, args.output_directory, plot_flag, args.verbosity, args.log_file) for f in input_files)
     else:
+        if args.plot:
+            plot_flag = 1
         for f in input_files:
-            analysis(f, configuration, logger, args.annotation_directory, args.output_directory, args.plot)
+            analysis(f, configuration, logger, args.annotation_directory, args.output_directory, plot_flag)
 
 
 ###############################################################################
@@ -384,7 +417,7 @@ if __name__ == '__main__':
                             help="increase output verbosity")
 
         # Add arguments
-        parser.add_argument("input_dir", help="directory with wave files to analyze (a label file with the same basename should be available)")
+        parser.add_argument("input", help="directory with wave files or wave file to analyze (a label file with the same basename should be available)")
 
         # Parsing arguments
         args = parser.parse_args()
