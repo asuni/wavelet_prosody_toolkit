@@ -139,9 +139,7 @@ def _scale_for_reconstruction(wavelet_matrix,scales, dj, dt,mother="mexican_hat"
             cc == 0.7784
 
         c = dj / (cc * pi**(-0.25))
-        #for i in range(0, len(scales)):
-        #    scaled[i]*= 1./(i+1)  # c*sqrt(dt)/sqrt(scales[i])
-
+     
     for i in range(0, len(scales)):
         scaled[i]*= c*sqrt(dt)/sqrt(scales[i])
         # substracting the mean should not be necessary?
@@ -150,6 +148,27 @@ def _scale_for_reconstruction(wavelet_matrix,scales, dj, dt,mother="mexican_hat"
     return scaled
 
 
+def _freq2scale(freq, mother, period = 3.):
+    """
+    convert frequency to wavelet scale width
+    
+    Parameters
+    ----------
+    freq: float
+          frequency value in Hz
+
+    mother: string
+            name of the mother wavelet ("mexican_hat", "morlet")
+    """
+
+    freq = float(freq)
+    if mother.lower() == "mexican_hat":
+        return (1./freq)/(2. * pi / sqrt(2 + 0.5)) #np.sqrt(2./(2.*k0+1.)));
+    if mother.lower() == "morlet":
+        return  (1./freq)*(period + sqrt(2. + period**2))/(4 * pi)
+    else:
+        return (1./freq)/ (4. * pi / (2. * period + 1.))
+     
 ###########################################################################################
 # Public routines
 ###########################################################################################
@@ -175,7 +194,7 @@ def combine_scales(wavelet_matrix, slices):
     return array(combined_scales)
 
 
-def cwt_analysis(params, mother_name="mexican_hat",num_scales=12, first_scale = None, scale_distance=1.0, apply_coi=True, period=5, frame_rate = 200):
+def cwt_analysis(params, mother_name="mexican_hat",num_scales=12, first_scale = None, first_freq = None, scale_distance=1.0, apply_coi=True, period=5, frame_rate = 200):
     """Achieve the continous wavelet analysis of given parameters
 
     Parameters
@@ -187,7 +206,9 @@ def cwt_analysis(params, mother_name="mexican_hat",num_scales=12, first_scale = 
     num_scales: int, optional
         The number of scales [default: 12].
     first_scale: int, optional
-        The first scale indice
+        The width of the shortest scale
+    first_freq: int, optional
+        The highest frequency in Hz
     scale_distance: float, optional
         The distance between scales [default: 1.0].
     apply_coi: boolean, optional
@@ -205,10 +226,16 @@ def cwt_analysis(params, mother_name="mexican_hat",num_scales=12, first_scale = 
     	The scale indices corresponding to the wavelet data
     """
     # setup wavelet transform
+   
     dt = 1. /float(frame_rate)  # frame length
-    dj = scale_distance  # distance between scales in octaves
-    if first_scale == None:
+
+    if not first_scale:
         first_scale = dt # first scale, here frame length
+    
+    if first_freq:
+        first_scale = _freq2scale(first_freq, mother_name, period)
+        
+    dj = scale_distance  # distance between scales in octaves
     J =  num_scales #  number of scales
 
     mother = cwt.MexicanHat()
