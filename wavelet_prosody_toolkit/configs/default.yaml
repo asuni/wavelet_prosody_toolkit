@@ -8,7 +8,7 @@ f0:
 
 energy:
   # subband for energy calculation (in hz)
-  band_min: 400
+  band_min: 200
   band_max: 5000
   calculation_method: "rms"                # 'rms', 'hilbert' or 'true_envelope'  (root mean square, hilbert envelope, or true envelope -inspired method)
   smooth_energy: True                      # smoothing reduces the effect of voicing related variation in energy contour
@@ -40,7 +40,7 @@ wavelet:
   period: 3                               # applies to morlet and paul wavelets (periods 2 - 5 are reasonable)
 
   scale_distance: 0.25                    # distance between adjacent scales in octaves, (0.25 means 4 scales per octave)
-  num_scales: 40                          # number of wavelet scales
+  num_scales: 30                          # number of wavelet scales
   magnitude: False                        # for purposes other than prosodic event annotation,
                                           # examinining wavelet magnitude might be useful (complex wavelets Morlet or Paul should be used)
 
