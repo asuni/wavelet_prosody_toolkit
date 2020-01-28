@@ -28,6 +28,9 @@ REQUIREMENTS = [
     # Audio/speech
     "soundfile", "tgt", "wavio",
 
+    # Parallel
+    "joblib",
+
     # Rendering
     "pyqt5"
 ]

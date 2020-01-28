@@ -16,7 +16,7 @@ LICENSE
 from . import smooth_and_interp, misc
 import numpy as np
 
-SIL_SYMBOLS = ["#","!pau", "<s>", "pau", "!sil", "sil", "", " ","<p>", "<p:>", ".", ",","?"]
+SIL_SYMBOLS = ["#","!pau", "sp", "<s>", "pau", "!sil", "sil", "", " ","<p>", "<p:>", ".", ",","?"]
 
 
 def _get_dur_stats(labels, linear=False, sil_symbols=[]):
@@ -27,7 +27,7 @@ def _get_dur_stats(labels, linear=False, sil_symbols=[]):
             dur = en-st
             if not linear:
 
-                dur = np.log(dur)
+                dur = np.log(dur+1.)
             durations.append(dur)
     durations = np.array(durations)
     return (np.min(durations), np.max(durations), np.mean(durations))
@@ -43,9 +43,9 @@ def get_rate(params,p=2,hp=10,lp=150, fig=None):
     params = smooth_and_interp.smooth(params, hp)
     params -= smooth_and_interp.smooth(params, lp)
 
-    wavelet_matrix, scales  = cwt_utils.cwt_analysis(params, mother_name="Morlet",
-                                                     num_scales=80, scale_distance=0.1,
-                                                     apply_coi=True,period=2)
+    wavelet_matrix, scales, freqs  = cwt_utils.cwt_analysis(params, mother_name="Morlet", \
+                                                            num_scales=80, scale_distance=0.1,\
+                                                            apply_coi=True,period=2)
     wavelet_matrix = abs(wavelet_matrix)
 
     rate = np.zeros(len(params))
@@ -66,7 +66,7 @@ def get_rate(params,p=2,hp=10,lp=150, fig=None):
     return rate
 
 
-def duration(labels, rate=200,linear=False,bump=True, sil_symbols=SIL_SYMBOLS):
+def duration(labels, rate=200,linear=False,bump=False, sil_symbols=SIL_SYMBOLS):
     """
     construct duration signal from labels
     """
@@ -89,7 +89,7 @@ def duration(labels, rate=200,linear=False,bump=True, sil_symbols=SIL_SYMBOLS):
             dur[i] = min_dur
 
         # skip very short units, likely labelling errors
-        if (en<=st+0.02):
+        if (en<=st+0.01):
             continue
 
         # unit duration -> height of the duration contour in the middle of the unit
@@ -97,13 +97,12 @@ def duration(labels, rate=200,linear=False,bump=True, sil_symbols=SIL_SYMBOLS):
 
         # "bump" -> emphasize difference between adjacent unit durations
         if i > 0 and bump:
-            #params[int(st)] = 0
             params[int(st)]= (dur[i]+dur[i-1])/2.- (abs(dur[i]-dur[i-1]))
 
         # handle gaps in labels similarly to silences
         if  st > prev_end and i > 1:
-            gap_dur = min_dur
-            params[int(prev_end+(st-prev_end)/2.0)] = (gap_dur) #0.001 #-max_dur
+            #gap_dur = min_dur
+            params[int(prev_end+(st-prev_end)/2.0)] = min_dur #(gap_dur) #0.001 #-max_dur
         prev_end = en
 
     # set endpoints to mean in order to avoid large "valleys"
@@ -118,17 +117,18 @@ def duration(labels, rate=200,linear=False,bump=True, sil_symbols=SIL_SYMBOLS):
 
 
 
-def get_duration_signal(tiers =[], weights = [], sil_symbols=SIL_SYMBOLS, rate=1):
+def get_duration_signal(tiers =[], weights = [], sil_symbols=SIL_SYMBOLS,\
+                        rate=1, linear=True, bump=False):
     """
     Construct duration contour from labels. If many tiers are selected,
     construct contours for each tier and return a weighted sum of those
 
     """
-
     durations = []
     lengths  = []
     for t in tiers:
-        durations.append(misc.normalize_std(duration(t, rate=rate, sil_symbols=sil_symbols)))
+        durations.append(misc.normalize_std(duration(t, rate=rate, sil_symbols=sil_symbols,\
+                                                     linear=linear, bump=bump)))
 
     durations = misc.match_length(durations)
     sum_durations =np.zeros(len(durations[0]))
