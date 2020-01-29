@@ -477,13 +477,19 @@ class SigWindow(QtWidgets.QDialog):
         self.diffDur.setChecked(self.configuration["duration"]["delta_duration"])
         self.diffDur.clicked.connect(self.onSignalRate)
 
+        # Zero duration signal at unit boundaries
+        self.bump =  QtWidgets.QCheckBox("Emphasize differences")
+        self.bump.setToolTip("duration signal with valleys relative to adjacent unit duration differences")
+        self.bump.setChecked(self.configuration["duration"]["bump"])
+        self.bump.clicked.connect(self.onSignalRate)
         # Setup the group box
         box = QtWidgets.QVBoxLayout()
         box.addWidget(self.signalTiers)
         box.addWidget(self.diffDur)
         box.addWidget(self.signalRate)
+        box.addWidget(self.bump)
         groupBox = QtWidgets.QGroupBox("Tier(s) for Duration Signal")
-        groupBox.setMaximumSize(400, 150)  # FIXME: see for not having hardcoded size
+        #groupBox.setMaximumSize(400, 150)  # FIXME: see for not having hardcoded size
         groupBox.setLayout(box)
         groupBox.setToolTip("Generate duration signal from a tier or as a sum of two or more tiers.\n" +
                             "Shift-click to multi-select, Ctrl-click to de-select")
@@ -829,7 +835,10 @@ class SigWindow(QtWidgets.QDialog):
                 try:
                     # Only if some tiers are selected
                     if (len(sig_tiers))>0:
-                        self.rate = duration_processing.get_duration_signal(sig_tiers, sil_symbols=self.configuration["duration"]["silence_symbols"])
+                        self.rate = duration_processing.get_duration_signal(sig_tiers, \
+                                                                            sil_symbols=self.configuration["duration"]["silence_symbols"], \
+                                                                            bump = self.bump.isChecked())
+                        print(self.bump)
                 except Exception as ex:
                     exception_log(self.logger, "Duration signal construction failed", ex, logging.ERROR)
 
@@ -1096,6 +1105,7 @@ def main():
                     logging.debug("configuration filled with user part")
                     logging.debug(configuration)
             except IOError as ex:
+                
                 logging.error("configuration file " + args.config + " could not be loaded:")
                 logging.error(ex.msg)
                 sys.exit(1)
