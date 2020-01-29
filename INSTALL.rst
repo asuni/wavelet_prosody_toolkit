@@ -1,76 +1,56 @@
 Install procedure
 =================
 
-Wavelet Prosody Analyzer is a graphical tool built with Python3 and QT5.
-It is started from terminal, so some familiarity with command line tools
-is assumed.
+Wavelet Prosody Analyzer is a toolkit comprising command line tools and a GUI application.
+All the tools are started from terminal, so some familiarity with command line tools is assumed.
 
-Installation has been tested only on one Ubuntu Linux, on Arch Linux and
-on MacOS Sierra machine. Running on windows might be possible if the
-required libraries can be installed.
+Installation has been tested only on one Ubuntu Linux, on Arch Linux and on MacOS Sierra machine.
+Running on windows might be possible if the required libraries can be installed.
 
-Standard installation
+Default installation
 ---------------------
 
-Using the setup installation script, you can install it locally using
-the following command:
+To install the toolkit, simply run
 
 .. code:: sh
 
-    pip3 install -e. --user
+    pip install -e .
 
-or for all users, **with root privileges**, using this command:
+It will install the dependencies needed to run the toolkit.
+
+To be able to run the application globally, the following line should be added to your shell profile file (~/.bashrc or ~/.profile in general):
+
+.. code:: sh
+   export PATH=~/.local/bin:$PATH
+
+After restarting the shell, you can finally run the tool by calling them on the command line, like for example:
+
+.. code:: sh
+   wavelet_gui
+
+Development mode installation
+------------------------
+
+Even if the setup doesn't require it, we advise to use the environment management system conda ( https://docs.conda.io/en/latest/miniconda.html ).
+Conda provides an easy way to define the environments and install precompiled packages.
+Therefore, the modification you will propose won't affect your system configuration.
+
+Assuming you have created activated the conda environment, you can install pre-compiled packages
 
 .. code:: sh
 
-    pip3 install -e.
+   conda install scipy numpy matplotlib joblib pyqt
 
-By default pyreaper is **not enabled**. If you want to install it, use the following command:
-
-.. code:: sh
-
-    pip3 install -e.[reaper] --user
-
-Developer installation
-----------------------
-
--  When using mac, check if command line tools have been installed. In
-   terminal, print:
+We then use the setup script to install the rest of the dependencies:
 
 .. code:: sh
 
-    gcc --version
+    pip install -e .
 
-if you get a pop-up box asking about installing, press ‘Install’
-
--  Check if python3 is available:
-
-.. code:: sh
-
-    python3 --version
-
-if you get “command not found” or version < 3.5, download python3.6 from
-python.org and install.
-
--  Verify the install:
-
-.. code:: sh
-
-    python3 --version
-
-should print something like:
-``Python 3.6.3 (v3.6.3:2c5fed86e0, Oct  3 2017, 00:32:08)``
-
--  install required python libraries:
-
-.. code:: sh
-
-    python3 setup.py develop --user
-
--  start the Wavelet Prosody Analyzer:
+To start the Wavelet Prosody Analyzer GUI, run the following commands:
 
 .. code:: sh
 
     python3 wavelet_prosody_toolkit/wavelet_gui.py
 
-if it doesn’t work, please raise an issue on github here: https://github.com/seblemaguer/wavelet_prosody_toolkit/issues .
+if it doesn’t work, please raise an issue on github here: https://github.com/asuni/wavelet_prosody_toolkit/issues .
