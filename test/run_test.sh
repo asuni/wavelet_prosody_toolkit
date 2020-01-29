@@ -15,3 +15,11 @@ ret=$?
 if [ $ret != 0 ]; then
     exit $ret
 fi
+
+# Check global spectrum extractor
+python3 wavelet_prosody_toolkit/cwt_global_spectrum.py -v -o test_spectrum samples/8hz_4hz_1hz.wav
+diff -r test_spectrum/ test/resources/test_spectrum
+ret=$?
+if [ $ret != 0 ]; then
+    exit $ret
+fi
