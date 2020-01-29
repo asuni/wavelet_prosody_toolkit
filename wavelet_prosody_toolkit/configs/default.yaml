@@ -40,7 +40,7 @@ wavelet:
   period: 3                               # applies to morlet and paul wavelets (periods 2 - 5 are reasonable)
 
   scale_distance: 0.25                    # distance between adjacent scales in octaves, (0.25 means 4 scales per octave)
-  num_scales: 30                          # number of wavelet scales
+  num_scales: 34                          # number of wavelet scales
   magnitude: False                        # for purposes other than prosodic event annotation,
                                           # examinining wavelet magnitude might be useful (complex wavelets Morlet or Paul should be used)
 

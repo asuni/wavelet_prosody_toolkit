@@ -49,10 +49,7 @@ def read_textgrid(filename, sample_rate=200):
                 labs['prosody'][i][2]+="_p0"
     except:
         pass
-    #for t in tg.tiers:
-        #print t
-    #    print tg.tiers[0].encode('latin-1')
-
+    
     return labs
 
 
@@ -171,7 +168,7 @@ def plot_labels(labels,shift = 0,  fig="", text = True, ypos = -0.5, color="blac
 
     import matplotlib.patches as patches
 
-    fig.add_patch(patches.Rectangle((labels[0][0], 0), labels[-1][1]-labels[0][0], size*0.3,color="white",alpha=0.35))
+    #fig.add_patch(patches.Rectangle((labels[0][0], 0), labels[-1][1]-labels[0][0], size*0.5,color="black",alpha=0.35))
     i = 0
     for (start, end, segment) in labels:
         start*=rate
@@ -183,7 +180,8 @@ def plot_labels(labels,shift = 0,  fig="", text = True, ypos = -0.5, color="blac
             try:
 
                 #fig.text(start+(end-start)/2,ypos, segment, color=color,fontsize=size+(prominences[i]-0.5)*10,ha='center',alpha=prominences[i]) #, color="grey")
-                fig.text(start+(end-start)/2,ypos, segment, color=color,fontsize=size*(prominences[i]+0.5)*1,ha='center',alpha=0.75) #, color="grey")
+                t =fig.text(start+(end-start)/2,ypos, segment, color=color,fontsize=size*(prominences[i]+0.5)*1,ha='center',alpha=0.75, rotation=45) #, color="grey")
+                t.set_bbox(dict(facecolor='grey', alpha=0.3, edgecolor='grey'))
             except:
                 pass
 

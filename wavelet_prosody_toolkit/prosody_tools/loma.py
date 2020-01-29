@@ -292,5 +292,5 @@ def plot_loma(loma, fig, color='black'):
             y = i-1
             size = child[1]
             fig.plot([child[0], child[3]], [(i-2), y],
-                     linewidth=2+size, color=color,
+                     linewidth=size, color=color,
                      alpha=0.45, solid_capstyle='round')
