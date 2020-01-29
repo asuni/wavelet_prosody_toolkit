@@ -98,9 +98,10 @@ def _zero_outside_coi(wavelet_matrix,freqs, rate = 200):
     """
     for i in range(0,wavelet_matrix.shape[0]):
         coi =int(1./freqs[i]*rate)
-         wavelet_matrix[i,0:coi] = 0.
+        wavelet_matrix[i,0:coi] = 0.
         wavelet_matrix[i,-coi:] = 0.
     return wavelet_matrix
+
 def _scale_for_reconstruction(wavelet_matrix,scales, dj, dt,mother="mexican_hat",period=3):
     """ ?
 
