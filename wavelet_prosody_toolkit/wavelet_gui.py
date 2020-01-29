@@ -838,7 +838,6 @@ class SigWindow(QtWidgets.QDialog):
                         self.rate = duration_processing.get_duration_signal(sig_tiers, \
                                                                             sil_symbols=self.configuration["duration"]["silence_symbols"], \
                                                                             bump = self.bump.isChecked())
-                        print(self.bump)
                 except Exception as ex:
                     exception_log(self.logger, "Duration signal construction failed", ex, logging.ERROR)
 
@@ -898,20 +897,22 @@ class SigWindow(QtWidgets.QDialog):
             self.ax[3].cla()
 
         # do wavelet analysis
-        n_scales = 40
-        scale_dist = 0.25
 
         if self.fUpdate['cwt']:
             self.logger.debug("wavelet transform...")
-
+            
             (self.cwt, self.scales, self.freqs) = cwt_utils.cwt_analysis(self.params,
                                                                          mother_name=self.configuration["wavelet"]["mother_wavelet"],
                                                                          period=self.configuration["wavelet"]["period"],
+                                                                         first_freq = 16,
                                                                          num_scales=self.configuration["wavelet"]["num_scales"],
                                                                          scale_distance=self.configuration["wavelet"]["scale_distance"],
                                                                          apply_coi=True)
+            
+            
             if self.configuration["wavelet"]["magnitude"]:
-                self.cwt = np.log(np.abs(self.cwt)+1.)
+                #self.cwt = np.log(np.abs(self.cwt)+1.)
+                self.cwt = np.abs(self.cwt)
             else:
                 self.cwt = np.real(self.cwt)
 
@@ -920,22 +921,23 @@ class SigWindow(QtWidgets.QDialog):
             self.scales*=PLOT_SR
         if self.fUpdate['tiers'] or self.fUpdate['cwt']:
             import matplotlib.colors as colors
+
             self.ax[-1].contourf(np.real(self.cwt), 100,
                                  norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05, vmin=-1.0, vmax=1.0),
                                  cmap="jet")
+        n_scales = self.configuration["wavelet"]["num_scales"]
+        scale_dist = self.configuration["wavelet"]["scale_distance"]
 
         # calculate lines of maximum and minimum amplitude
         if self.fUpdate['loma'] and labels:
             self.logger.debug("lines of maximum amplitude...")
-            n_scales = self.configuration["wavelet"]["num_scales"]
-            scale_dist = self.configuration["wavelet"]["scale_distance"]
-
+           
             # get scale corresponding to avg unit length of selected tier
             unit_scale = misc.get_best_scale2(self.scales, labels)
 
             unit_scale = np.max([8, unit_scale])
             unit_scale = np.min([n_scales-2, unit_scale])
-            print(unit_scale)
+
             labdur = []
             for l in labels:
                 labdur.append(l[1]-l[0])
@@ -996,7 +998,7 @@ class SigWindow(QtWidgets.QDialog):
         self.ax[3].set_ylabel("Wavelet scale (Hz)")
 
         plt.setp([a.get_xticklabels() for a in self.ax[0:-1]], visible=False)
-        vals = self.ax[-1].get_xticks()[1:]
+        vals = self.ax[-1].get_xticks()[0:]
         ticks_x = ticker.FuncFormatter(lambda vals, p:'{:1.2f}'.format(float(vals/PLOT_SR)))
         self.ax[-1].xaxis.set_major_formatter(ticks_x)
 
