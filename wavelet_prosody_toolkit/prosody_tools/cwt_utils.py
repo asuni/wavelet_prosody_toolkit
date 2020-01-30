@@ -13,7 +13,7 @@ LICENSE
     See https://github.com/asuni/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """
 
-from numpy import array,concatenate, sqrt, pad, mean, std, real, nan, zeros, nanmean, nanstd, pi, around
+from numpy import array,concatenate, sqrt, pad, mean, std, real, nan, zeros, nanmean, nanstd, pi, around, log2
 
 import pycwt as cwt
 
@@ -83,23 +83,24 @@ def _padded_cwt(params, dt, dj, s0, J, mother, padding_len):
     return (wavelet_matrix, scales, freqs, coi, fft, fftfreqs)
 
 
-def _zero_outside_coi(wavelet_matrix,scales):
-    """Private function to set each elements outside of the Cone Of Influence (coi) to 0.
 
+
+def _zero_outside_coi(wavelet_matrix,freqs, rate = 200):
+    """Private function to set each elements outside of the Cone Of Influence (coi) to 0.
+  
     Parameters
     ----------
     wavelet_matrix: type
         description
-    scales: type
+    freqs: type
         description
 
     """
     for i in range(0,wavelet_matrix.shape[0]):
-        coi =int((scales[i]))
+        coi =int(1./freqs[i]*rate)
         wavelet_matrix[i,0:coi] = 0.
         wavelet_matrix[i,-coi:] = 0.
     return wavelet_matrix
-
 
 def _scale_for_reconstruction(wavelet_matrix,scales, dj, dt,mother="mexican_hat",period=3):
     """ ?
@@ -250,8 +251,10 @@ def cwt_analysis(params, mother_name="mexican_hat",num_scales=12, first_scale = 
 
     #wavelet_matrix = abs(wavelet_matrix)
     wavelet_matrix = _scale_for_reconstruction((wavelet_matrix), scales, dj, dt,mother=mother_name,period=period)
+
     if apply_coi:
-        wavelet_matrix = _zero_outside_coi(wavelet_matrix, scales/dt*0.5)
+        #wavelet_matrix = _zero_outside_coi(wavelet_matrix, scales/dt*0.5)
+        wavelet_matrix = _zero_outside_coi(wavelet_matrix, freqs, frame_rate)
     import numpy as np
     np.set_printoptions(precision=3, suppress=True)
     return (wavelet_matrix,scales,freqs)

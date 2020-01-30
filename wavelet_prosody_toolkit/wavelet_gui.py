@@ -763,7 +763,7 @@ class SigWindow(QtWidgets.QDialog):
             self.ax[0].cla()
             self.orig_sr, self.sig = misc.read_wav(self.cur_wav)
             self.plot_len = int(len(self.sig) * (PLOT_SR/self.orig_sr))
-            self.ax[0].specgram(self.sig, NFFT=200, noverlap=40, Fs=self.orig_sr, xextent=[0, self.plot_len], cmap="jet")
+            self.ax[0].specgram(self.sig,mode="magnitude", NFFT=200, noverlap=40, Fs=self.orig_sr, xextent=[0, self.plot_len], cmap="plasma")
 
         if self.fUpdate['energy']:
             # 'energy' is just a smoothed envelope here
@@ -904,10 +904,10 @@ class SigWindow(QtWidgets.QDialog):
             (self.cwt, self.scales, self.freqs) = cwt_utils.cwt_analysis(self.params,
                                                                          mother_name=self.configuration["wavelet"]["mother_wavelet"],
                                                                          period=self.configuration["wavelet"]["period"],
-                                                                         first_freq = 16,
+                                                                         first_freq = 32,
                                                                          num_scales=self.configuration["wavelet"]["num_scales"],
                                                                          scale_distance=self.configuration["wavelet"]["scale_distance"],
-                                                                         apply_coi=True)
+                                                                         apply_coi=False)
             
             
             if self.configuration["wavelet"]["magnitude"]:
@@ -921,10 +921,10 @@ class SigWindow(QtWidgets.QDialog):
             self.scales*=PLOT_SR
         if self.fUpdate['tiers'] or self.fUpdate['cwt']:
             import matplotlib.colors as colors
-
-            self.ax[-1].contourf(np.real(self.cwt), 100,
-                                 norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05, vmin=-1.0, vmax=1.0),
-                                 cmap="jet")
+            self.ax[-1].contourf(self.cwt, 100, cmap="inferno")
+            #self.ax[-1].contourf(np.real(self.cwt), 100,
+            #                     norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05, vmin=-1.0, vmax=1.0),
+            #                     cmap="jet")
         n_scales = self.configuration["wavelet"]["num_scales"]
         scale_dist = self.configuration["wavelet"]["scale_distance"]
 
@@ -972,12 +972,13 @@ class SigWindow(QtWidgets.QDialog):
             text_prominence = self.prominences[:, 1]/(np.max(self.prominences[:, 1]))*2.5 + 0.5
 
             lab.plot_labels(labels, ypos=1, fig=self.ax[-1],
-                            size=5, prominences=text_prominence, boundary=True)
+                            size=5.5, prominences=text_prominence, boundary=False, color="white")
 
             for i in range(0, len(labels)):
-                self.ax[-1].axvline(x=labels[i][1], color='black',
-                                    linestyle="-", linewidth=self.boundaries[i][-1] * 4,
-                                    alpha=0.3)
+                self.ax[-1].axvline(x=labels[i][1], color='white',
+                                    linestyle="-", linewidth=0.2+self.boundaries[i][-1] * 2,
+                                    ymin=0, ymax=1.0,
+                                    alpha=0.5)
 
         #
         # save analyses
