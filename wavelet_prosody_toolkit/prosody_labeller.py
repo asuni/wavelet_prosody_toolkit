@@ -219,7 +219,7 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
                                                   period=cfg["wavelet"]["period"],
                                                   num_scales=cfg["wavelet"]["num_scales"],
                                                   scale_distance=cfg["wavelet"]["scale_distance"],
-                                                  apply_coi=True)
+                                                  apply_coi=False)
     cwt = np.real(cwt)
     scales *= 200 # FIXME: why 200?
 
@@ -266,7 +266,7 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
     if plot != 0:
         fig, ax =  plt.subplots(6, 1, sharex=True,
                                 figsize=(len(labels) / 10 * 8, 8),
-                                gridspec_kw = {'height_ratios':[1, 1, 1, 2, 4, 1]})
+                                gridspec_kw = {'height_ratios':[1, 1, 1, 2, 4, 1.5]})
         plt.subplots_adjust(hspace=0)
 
         # Plot individual signals
@@ -287,21 +287,26 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
         # Wavelet and loma
         cwt[cwt>0] = np.log(cwt[cwt>0]+1.)
         cwt[cwt<-0.1] = -0.1
-        ax[4].contourf(cwt,100, cmap="jet")
+        ax[4].contourf(cwt,100, cmap="inferno")
         loma.plot_loma(pos_loma, ax[4], color="black")
         loma.plot_loma(neg_loma, ax[4], color="white")
         ax[4].set_ylabel("Wavelet & \n LOMA", rotation="horizontal", ha="right", va="center")
-
+        
         # Add labels
         prom_text =  prominences[:, 1]/(np.max(prominences[:, 1]))*2.5 + 0.5
-        lab.plot_labels(labels, ypos=0.5, size=6, prominences=prom_text, fig=ax[5], boundary=True)
+        lab.plot_labels(labels, ypos=0.3, size=6, prominences=prom_text, fig=ax[5], boundary=False, background=False)
+        ax[5].set_ylabel("Labels", rotation="horizontal", ha="right", va="center")
         for i in range(0, len(labels)):
-            for a in [0, 1, 2, 3, 5]:
+            for a in [0, 1, 2, 3, 4, 5]:
+                ax[a].axvline(x=labels[i][0], color='black',
+                              linestyle="-", linewidth=0.2, alpha=0.5)
+                
                 ax[a].axvline(x=labels[i][1], color='black',
-                              linestyle="-", linewidth=boundaries[i][-1] * 4,
+                              linestyle="-", linewidth=0.2+boundaries[i][-1] * 2,
                               alpha=0.5)
-        plt.xlim(0, cwt.shape[1])
 
+        plt.xlim(0, cwt.shape[1])
+    
         # Align ylabels and remove axis
         fig.align_ylabels(ax)
         for i in range(len(ax)-1):
@@ -340,6 +345,7 @@ def analysis_batch_wrap(input_file, cfg, annotation_dir=None, output_dir=None, p
 
     # Encapsulate running
     try:
+        print(".")
         analysis(input_file, cfg, logger, annotation_dir, output_dir, plot)
     except Exception as ex:
         logging.error(str(ex))
@@ -403,7 +409,7 @@ if __name__ == '__main__':
         # Add options
         parser.add_argument("-a", "--annotation_directory", default=None, type=str,
                             help="Annotation directory. If not specified, the tool will by default try to load annotations from the directory containing the wav files")
-        parser.add_argument("-j", "--nb_jobs", default=1, type=int,
+        parser.add_argument("-j", "--nb_jobs", default=4, type=int,
                             help="Define the number of jobs to run in parallel")
         parser.add_argument("-c", "--config", default=None, type=str,
                             help="configuration file")
@@ -413,15 +419,18 @@ if __name__ == '__main__':
                             help="The output directory. If not specified, the tool will output the result in a .prom file in the same directory than the wave files")
         parser.add_argument("-p", "--plot", default=False, action="store_true",
                             help="Plot the result (the number of jobs is de facto set to 1 if activated)")
-        parser.add_argument("-v", "--verbosity", action="count", default=0,
+        parser.add_argument("-v", "--verbosity", action="count", default=1,
                             help="increase output verbosity")
 
         # Add arguments
         parser.add_argument("input", help="directory with wave files or wave file to analyze (a label file with the same basename should be available)")
 
+
+
         # Parsing arguments
         args = parser.parse_args()
-
+        if args.plot:
+            args.nb_jobs = 1
         # Get the logger
         logger = get_logger(args.verbosity, args.log_file)
 

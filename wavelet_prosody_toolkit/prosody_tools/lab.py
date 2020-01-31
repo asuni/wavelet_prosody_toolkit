@@ -151,7 +151,8 @@ def read_htk_label(fname, scale = "word", htk_time=True, only_words=False):
     return labs
 
 
-def plot_labels(labels,shift = 0,  fig="", text = True, ypos = -0.5, color="black", boundary=True, size =9,prominences=[], rate = 1.):
+def plot_labels(labels,shift = 0,  fig="", text = True, ypos = -0.5, color="black",
+                boundary=True, size =9,prominences=[], rotation=30, background=True,rate = 1.):
     import numpy as np
     import pylab
     if fig == "":
@@ -168,20 +169,18 @@ def plot_labels(labels,shift = 0,  fig="", text = True, ypos = -0.5, color="blac
 
     import matplotlib.patches as patches
 
-    #fig.add_patch(patches.Rectangle((labels[0][0], 0), labels[-1][1]-labels[0][0], size*0.5,color="black",alpha=0.35))
     i = 0
     for (start, end, segment) in labels:
         start*=rate
         end*=rate
         if text and segment[0] != "!":
-            # fig.text(start+1-shift,5, token) #, color="grey")
-            # fig.text(start-1+(end-start)/5-shift,ypos, segment, color=color, fontsize= 15)
+
 
             try:
-
-                #fig.text(start+(end-start)/2,ypos, segment, color=color,fontsize=size+(prominences[i]-0.5)*10,ha='center',alpha=prominences[i]) #, color="grey")
-                t =fig.text(start+(end-start)/2,ypos, segment, color=color,fontsize=size*(prominences[i]+0.5)*1,ha='center',alpha=0.75, rotation=45) #, color="grey")
-                t.set_bbox(dict(facecolor='grey', alpha=0.3, edgecolor='grey'))
+               
+                t =fig.text(start+(end-start)/2,ypos, segment, color=color,fontsize=size*(prominences[i]+0.5)*1,ha='center',alpha=0.75, rotation=rotation) #, color="grey")
+                if background:
+                    t.set_bbox(dict(facecolor='grey', alpha=0.3, edgecolor='grey'))
             except:
                 pass
 
