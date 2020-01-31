@@ -10,7 +10,8 @@ fi
 
 # Check prosody labeller
 python3 wavelet_prosody_toolkit/prosody_labeller.py -v -o test_libri -c wavelet_prosody_toolkit/configs/libritts.yaml samples/libritts
-diff -r test_libri test/resources/libritts
+python3 test/diff_num.py  test_libri test/resources/libritts
+#diff -r test_libri test/resources/libritts
 ret=$?
 if [ $ret != 0 ]; then
     exit $ret
