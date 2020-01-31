@@ -138,3 +138,11 @@ You are recommended to make a copy of the default.yaml file (to e.g. myconfig.ya
 .. code:: sh
 
 	  wavelet_gui --config path/to/myconfig.yaml
+
+Some helpful shortcuts
+----------------------
+
+Here are a list of shortcuts available in the GUI:
+
+- **CTRL+q** to quit
+- **F11** to switch between fullscreen et normal mode
