@@ -178,7 +178,8 @@ def plot_labels(labels,shift = 0,  fig="", text = True, ypos = -0.5, color="blac
 
             try:
                
-                t =fig.text(start+(end-start)/2,ypos, segment, color=color,fontsize=size*(prominences[i]+0.5)*1,ha='center',alpha=0.75, rotation=rotation) #, color="grey")
+                t =fig.text(start+(end-start)/2,ypos, segment, color=color,fontsize=size*(prominences[i]+0.5)*1,\
+                            ha='center',alpha=0.75, rotation=rotation, clip_on=True)
                 if background:
                     t.set_bbox(dict(facecolor='grey', alpha=0.3, edgecolor='grey'))
             except:
