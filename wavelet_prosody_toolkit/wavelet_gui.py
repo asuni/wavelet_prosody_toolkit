@@ -29,7 +29,7 @@ import logging
 import yaml
 
 # QT related imports
-from PyQt5 import QtCore, QtWidgets, QtMultimedia
+from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
@@ -187,6 +187,10 @@ class SigWindow(QtWidgets.QDialog):
         """
         super(SigWindow, self).__init__(parent)
 
+        # Ubuntu patch
+        if sys.platform == "linux":
+            self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.CustomizeWindowHint)
+
         # Define the logger
         self.logger = logging.getLogger(__name__)
 
@@ -342,6 +346,29 @@ class SigWindow(QtWidgets.QDialog):
         full_layout.addWidget(self.logger_widget_pager, 1)
         self.setLayout(full_layout)
 
+        ##########################################
+        # Define some key helpers
+        ##########################################
+        # Add another exit shortcut!
+        self.actionExit = QtWidgets.QAction(('E&xit'), self)
+        self.actionExit.setShortcut(QtGui.QKeySequence("Ctrl+Q"))
+        self.addAction(self.actionExit)
+        self.actionExit.triggered.connect(self.close)
+
+        # Add fullscreen shortcut
+        fullscreen_shortcut = QtWidgets.QAction(('Fullscreen'), self)
+        fullscreen_shortcut.setShortcut(QtGui.QKeySequence("F11"))
+        self.addAction(fullscreen_shortcut)
+        fullscreen_shortcut.triggered.connect(self.switchFullScreen)
+
+    def switchFullScreen(self):
+        """Switch between normal and full screen mode
+
+        """
+        if self.isFullScreen():
+            self.showNormal()
+        else:
+            self.showFullScreen()
 
     def onSwitchLogging(self):
         if self.logger_widget_pager.isVisible():
@@ -900,7 +927,7 @@ class SigWindow(QtWidgets.QDialog):
 
         if self.fUpdate['cwt']:
             self.logger.debug("wavelet transform...")
-            
+
             (self.cwt, self.scales, self.freqs) = cwt_utils.cwt_analysis(self.params,
                                                                          mother_name=self.configuration["wavelet"]["mother_wavelet"],
                                                                          period=self.configuration["wavelet"]["period"],
@@ -908,8 +935,8 @@ class SigWindow(QtWidgets.QDialog):
                                                                          num_scales=self.configuration["wavelet"]["num_scales"],
                                                                          scale_distance=self.configuration["wavelet"]["scale_distance"],
                                                                          apply_coi=False)
-            
-            
+
+
             if self.configuration["wavelet"]["magnitude"]:
                 #self.cwt = np.log(np.abs(self.cwt)+1.)
                 self.cwt = np.abs(self.cwt)
@@ -931,7 +958,7 @@ class SigWindow(QtWidgets.QDialog):
         # calculate lines of maximum and minimum amplitude
         if self.fUpdate['loma'] and labels:
             self.logger.debug("lines of maximum amplitude...")
-           
+
             # get scale corresponding to avg unit length of selected tier
             unit_scale = misc.get_best_scale2(self.scales, labels)
 
@@ -1097,18 +1124,18 @@ def main():
         # Load configuration
         configuration = defaultdict()
         with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/default.yaml", 'r') as f:
-            configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f)))
+            configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f, Loader=yaml.FullLoader)))
             logging.debug("Default configuration loaded")
             logging.debug(configuration)
 
         if args.config:
             try:
                 with open(args.config, 'r') as f:
-                    configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f)))
+                    configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f, Loader=yaml.FullLoader)))
                     logging.debug("configuration filled with user part")
                     logging.debug(configuration)
             except IOError as ex:
-                
+
                 logging.error("configuration file " + args.config + " could not be loaded:")
                 logging.error(ex.msg)
                 sys.exit(1)
