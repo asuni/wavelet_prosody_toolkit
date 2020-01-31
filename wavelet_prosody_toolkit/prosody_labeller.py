@@ -61,7 +61,7 @@ LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 def get_logger(verbosity, log_file):
 
     # create logger and formatter
-    logger = logging.getLogger()
+    logger = logging.getLogger("prosody labeller")
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     # Verbose level => logging level
@@ -124,7 +124,7 @@ def apply_configuration(current_configuration, updating_part):
 def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot=False):
 
     # Load the wave file
-    logger.info("Analyzing %s starting..." % input_file)
+    print("Analyzing %s starting..." % input_file)
     orig_sr, sig = misc.read_wav(input_file)
 
     # extract energy
@@ -256,7 +256,7 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
 
     basename = os.path.splitext(os.path.basename(input_file))[0]
     output_filename = os.path.join(output_dir, "%s.prom" % basename)
-    logger.info("Saving %s..." % (output_filename))
+    print("Saving %s..." % (output_filename))
     loma.save_analyses(output_filename,
                        labels,
                        prominences,
@@ -338,11 +338,7 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
         elif plot > 0:
             plt.show()
 
-def analysis_batch_wrap(input_file, cfg, annotation_dir=None, output_dir=None, plot=0, verbosity=logging.WARNING, log_file=None):
-
-    # Get the logger
-    logger = get_logger(verbosity, log_file)
-
+def analysis_batch_wrap(input_file, cfg, annotation_dir=None, output_dir=None, plot=0, logger=None):
     # Encapsulate running
     try:
         print(".")
@@ -391,7 +387,7 @@ def main():
     if nb_jobs > 1:
         if args.plot:
             plot_flag = -1
-        Parallel(n_jobs=nb_jobs)(delayed(analysis_batch_wrap)(f, configuration, args.annotation_directory, args.output_directory, plot_flag, args.verbosity, args.log_file) for f in input_files)
+        Parallel(n_jobs=nb_jobs, verbose=args.verbosity)(delayed(analysis_batch_wrap)(f, configuration, args.annotation_directory, args.output_directory, plot_flag, logger) for f in input_files)
     else:
         if args.plot:
             plot_flag = 1
@@ -442,8 +438,8 @@ if __name__ == '__main__':
         main()
 
         # Debug time
-        logging.info("end time = " + time.asctime())
-        logging.info('TOTAL TIME IN MINUTES: %02.2f' %
+        logger.info("end time = " + time.asctime())
+        logger.info('TOTAL TIME IN MINUTES: %02.2f' %
                      ((time.time() - start_time) / 60.0))
 
         # Exit program
