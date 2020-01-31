@@ -815,7 +815,8 @@ class SigWindow(QtWidgets.QDialog):
             # if f0 file is provided, use that
             if self.bUseExistingF0.isChecked():
                 raw_pitch = f0_processing.read_f0(self.cur_wav)
-
+                if raw_pitch is not None:
+                    raw_pitch = smooth_and_interp.interpolate_by_factor(raw_pitch, float(len(self.energy_smooth))/float(len(raw_pitch)))
             # else use reaper
             if raw_pitch is None:
                 # analyze pitch
@@ -913,7 +914,7 @@ class SigWindow(QtWidgets.QDialog):
                 params = smooth_and_interp.remove_bias(params, 800)  # FIXME: 800?
 
             self.params = misc.normalize_std(params)
-            self.ax[2].plot(params, color="black", linewidth=2, label="Combined")
+            self.ax[2].plot(self.params, color="black", linewidth=2, label="Combined")
 
         try:
             labels = self.tiers[unicode(self.tierlist.currentText())]
@@ -948,7 +949,7 @@ class SigWindow(QtWidgets.QDialog):
             self.scales*=PLOT_SR
         if self.fUpdate['tiers'] or self.fUpdate['cwt']:
             import matplotlib.colors as colors
-            self.ax[-1].contourf(self.cwt, 100, cmap="inferno")
+            self.ax[-1].imshow(self.cwt,aspect="auto", cmap="inferno", interpolation="bicubic")
             #self.ax[-1].contourf(np.real(self.cwt), 100,
             #                     norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05, vmin=-1.0, vmax=1.0),
             #                     cmap="jet")
@@ -1038,10 +1039,10 @@ class SigWindow(QtWidgets.QDialog):
             if index % 4 != 0 or index == 0:
                 label.set_visible(False)
 
-        for i in range(0,3):
-            nbins = len(self.ax[i].get_yticklabels())
+        for i in range(0,2):
+            nbins = len(self.ax[i].get_yticklabels())+1
             self.ax[i].yaxis.set_major_locator(MaxNLocator(nbins=nbins, prune='lower'))
-
+        self.ax[2].set_yticks([0,4,8,12])
         self.figure.subplots_adjust(hspace=0, wspace=0)
 
         if prev_zoom:
