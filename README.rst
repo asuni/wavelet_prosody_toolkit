@@ -8,6 +8,8 @@ Wavelet prosody analyzer
 
 antti.suni@helsinki.fi
 
+**UPDATE 3.2.2020**, Additional command-line tools: **batch-processing, global spectrum and analysis-synthesis:** `tools.rst <tools.rst>`__.
+
 |screenshot|
 
 .. |screenshot| image:: screenshot.png
