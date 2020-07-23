@@ -1032,8 +1032,8 @@ class SigWindow(QtWidgets.QDialog):
         self.ax[-1].xaxis.set_major_formatter(ticks_x)
 
         # can't comprehend matplotlib ticks.. construct frequency axis manually
-        self.ax[3].set_yticks(np.linspace(0,len(self.freqs),len(self.freqs)))
-        self.ax[3].set_yticklabels(np.around(self.freqs[:-1],2).astype('str'))
+        self.ax[3].set_yticks(np.linspace(0, len(self.freqs), len(self.freqs)))
+        self.ax[3].set_yticklabels(np.around(self.freqs, 2).astype('str'))
 
         for index, label in enumerate(self.ax[3].yaxis.get_ticklabels()):
             if index % 4 != 0 or index == 0:
