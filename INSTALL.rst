@@ -21,11 +21,13 @@ It will install the dependencies needed to run the toolkit.
 To be able to run the application globally, the following line should be added to your shell profile file (~/.bashrc or ~/.profile in general):
 
 .. code:: sh
+
    export PATH=~/.local/bin:$PATH
 
 After restarting the shell, you can finally run the tool by calling them on the command line, like for example:
 
 .. code:: sh
+
    wavelet_gui
 
 Development mode installation
