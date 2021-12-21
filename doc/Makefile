@@ -20,3 +20,7 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+
+Hi I am a senior student in NPU, I am planning to apply fro master degree and hoping to join ASLP lab. It would be great if I could get your contact. I am sorry for trying to connect this way.
+I am currently working as a undergraduate research assistant in team iBees of data mining and Bio-informatics lab. I am working here with NLP now. Hope you don't mind.
