@@ -100,7 +100,7 @@ def resample(waveform, s_sr, t_sr):
     returns: resampled waveform as np.array
     """
     ratio = fractions.Fraction(int(t_sr), int(s_sr))
-    return resample_poly(waveform, ratio.numerator, ratio.denominator)
+    return resample_poly(waveform.astype(np.float), ratio.numerator, ratio.denominator)
 
 
 def play(utt):
