@@ -22,7 +22,6 @@ from pylab import ginput
 
 # Logging
 import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -45,9 +44,9 @@ def read_wav(filename):
     # various packages tried.. difficulties with channels, 24bit files, various dtypes
     # pysoundfile appears to mostly work
 
-    data, samplerate = soundfile.read(filename, dtype="int16", always_2d=True)
+    data, samplerate = soundfile.read(filename, dtype='int16', always_2d=True)
 
-    return (samplerate, data[:, 0].copy(order="C"))
+    return (samplerate, data[:, 0].copy(order='C'))
 
     """Alternative solutions:
     # import wavio
@@ -110,7 +109,7 @@ def play(utt):
     st = 0.2
     end = 1
 
-    while st > 0.01:
+    while (st > 0.01):
         try:
             pts = ginput(1)
             st = pts[0][0] / 200.0
@@ -132,7 +131,7 @@ def match_length(sig_list):
     length = min(map(len, sig_list))
 
     for i in range(0, len(sig_list)):
-        sig_list[i] = sig_list[i][: int(length)]
+        sig_list[i] = sig_list[i][:int(length)]
 
     return sig_list
 
@@ -177,10 +176,10 @@ def calc_prominence(params, labels, func=np.max, use_peaks=True, rate=200):
     """
     labelled = []
     # norm = params.astype(float)  # FIXME SLM: not used
-    for start, end, segment, word in labels:
+    for (start, end, segment, word) in labels:
         if use_peaks:
             peaks = []
-            (peaks, indices) = get_peaks(params[start * rate - 1 : end * rate], 0.0)
+            (peaks, indices) = get_peaks(params[start*rate-1:end*rate], 0.0)
 
             if len(peaks) > 0:
                 labelled.append(np.max(peaks))
@@ -188,7 +187,7 @@ def calc_prominence(params, labels, func=np.max, use_peaks=True, rate=200):
                 labelled.append(0.0)
         else:
             # labelled.append([word, func(params[start-10:end])])
-            labelled.append(func(params[start * rate : end * rate]))
+            labelled.append(func(params[start*rate:end*rate]))
 
     return labelled
 
@@ -240,7 +239,7 @@ def get_best_scale2(scales, labels):
     """
     mean_length = 0
     for l in labels:
-        mean_length += l[1] - l[0]
+        mean_length += (l[1] - l[0])
 
     mean_length /= len(labels)
     dist = scales - mean_length
@@ -264,7 +263,7 @@ def normalize_minmax(params, epsilon=0.1):
         the normalized parameters
 
     """
-    return (params - min(params) + epsilon) / (max(params) - min(params))
+    return (params-min(params)+epsilon)/(max(params)-min(params))
 
 
 def normalize_std(params, std=0):
