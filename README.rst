@@ -1,7 +1,7 @@
-|travis-badge|_
+|github-actions-badge|_
 
-.. |travis-badge| image:: https://travis-ci.org/asuni/wavelet_prosody_toolkit.svg?branch=master
-.. _travis-badge: https://travis-ci.org/asuni/wavelet_prosody_toolkit
+.. |github-actions-badge| image:: https://github.com/asuni/wavelet_prosody_toolkit/actions/workflows/check-toolkit.yaml/badge.svg?branch=travis2github-actions
+.. _github-actions-badge: https://github.com/asuni/wavelet_prosody_toolkit/actions?query=check-wavelet-prosody-toolkit
 
 Wavelet prosody analyzer
 ========================
@@ -40,13 +40,13 @@ use the procedure describe in `./INSTALL.rst <INSTALL.rst>`__.
 
 Here are the main dependencies:
 
--  **pyqt5** for the gui (see https://www.riverbankcomputing.com/commercial/pyqt )
 -  **pycwt** for the wavelet analysis (see https://github.com/regeirk/pycwt/LICENSE.txt )
 -  **pyyaml** for the configuration (see https://github.com/yaml/pyyaml/blob/master/LICENSE )
--  **matplotlib** for the plot rendering (see https://github.com/matplotlib/matplotlib/blob/master/LICENSE/LICENSE )
 -  **soundfile** for playing waves (see https://github.com/bastibe/SoundFile/blob/master/LICENSE )
 -  **wavio** for reading/writing wav (see https://github.com/WarrenWeckesser/wavio/blob/master/README.rst )
 -  **tgt** for reading/writing textgrid (see https://github.com/hbuschme/TextGridTools/blob/master/LICENSE )
+-  **pyqt5** for the gui (see https://www.riverbankcomputing.com/commercial/pyqt )
+-  **matplotlib** for the plot rendering (see https://github.com/matplotlib/matplotlib/blob/master/LICENSE/LICENSE )
 
 Here the optional dependencies:
 
