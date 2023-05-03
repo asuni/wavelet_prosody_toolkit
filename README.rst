@@ -1,6 +1,7 @@
-|github-actions-badge|
+|github-actions-badge|_
 
 .. |github-actions-badge| image:: https://github.com/asuni/wavelet_prosody_toolkit/actions/workflows/check-toolkit.yaml/badge.svg?branch=travis2github-actions
+.. _github-actions-badge: https://github.com/asuni/wavelet_prosody_toolkit/actions?query=check-wavelet-prosody-toolkit
 
 Wavelet prosody analyzer
 ========================
