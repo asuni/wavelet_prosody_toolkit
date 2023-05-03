@@ -46,10 +46,6 @@ from collections import defaultdict
 
 import warnings
 
-# Plotting
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-
 # Wavelet import
 from wavelet_prosody_toolkit.prosody_tools import misc
 from wavelet_prosody_toolkit.prosody_tools import cwt_utils
@@ -156,13 +152,13 @@ def run():
     # Loading default configuration
     configuration = defaultdict()
     with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/default.yaml", 'r') as f:
-        configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f)))
+        configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.safe_load(f)))
         logging.debug("default configuration")
         logging.debug(configuration)
 
     # Loading dedicated analysis.synthesis configuration
     with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/synthesis.yaml", 'r') as f:
-        configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f)))
+        configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.safe_load(f)))
         logging.debug("configuration filled with synthesis part")
         logging.debug(configuration)
 
@@ -170,7 +166,7 @@ def run():
     if args.configuration_file:
         try:
             with open(args.configuration_file, 'r') as f:
-                configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f)))
+                configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.safe_load(f)))
                 logging.debug("configuration filled with user part")
                 logging.debug(configuration)
         except IOError as ex:
@@ -186,6 +182,10 @@ def run():
         f0 = f0_processing.process(raw_f0)
         # FIXME: reintegrated
         if args.plot:
+            # Plotting
+            import matplotlib.pyplot as plt
+            import matplotlib.colors as colors
+
             plt.title("F0 preprocessing and interpolation")
             plt.plot(f0, color="red", alpha=0.5, linewidth=3)
             plt.plot(raw_f0, color="gray", alpha=0.5)

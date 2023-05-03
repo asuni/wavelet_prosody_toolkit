@@ -1,0 +1,29 @@
+name: check-wavelet-prosody-toolkit
+run-name: ${{ github.actor }} is in validation
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.7', '3.8', '3.9', '3.10', '3.11' ]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      # Setup python
+      - name: Setup python
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
+      # Install everything
+      - name: Install wavelet-prosody-toolkit
+        run: pip install -e .
+
+      # Linux and macOS
+      - name: Run the test
+        shell: bash -l {0}
+        run: |
+          bash test/run_test.sh
