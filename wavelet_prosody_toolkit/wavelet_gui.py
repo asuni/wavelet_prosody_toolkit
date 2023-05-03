@@ -29,16 +29,20 @@ import logging
 import yaml
 
 # QT related imports
-from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+try:
+    from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
-# Plotting configuration
-from matplotlib.ticker import MaxNLocator
-# from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-# import matplotlib.gridspec as gridspec
-import matplotlib.ticker as ticker
+    # Plotting configuration
+    from matplotlib.ticker import MaxNLocator
+    # from matplotlib.figure import Figure
+    import matplotlib.pyplot as plt
+    # import matplotlib.gridspec as gridspec
+    import matplotlib.ticker as ticker
+except ModuleNotFoundError:
+    print("Qt and/or Matplotlib installed, install the [gui] setup to install the toolkit")
+    sys.exit(-1)
 
 # Numpy
 import numpy as np

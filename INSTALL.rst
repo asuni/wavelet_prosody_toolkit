@@ -14,7 +14,7 @@ To install the toolkit, simply run
 
 .. code:: sh
 
-    pip install -e .
+    pip install -e .[gui]
 
 It will install the dependencies needed to run the toolkit.
 
@@ -47,12 +47,12 @@ We then use the setup script to install the rest of the dependencies:
 
 .. code:: sh
 
-    pip install -e .
+    pip install -e .[full]
 
 To start the Wavelet Prosody Analyzer GUI, run the following commands:
 
 .. code:: sh
 
-    python3 wavelet_prosody_toolkit/wavelet_gui.py
+    wavelet_gui
 
 if it doesn’t work, please raise an issue on github here: https://github.com/asuni/wavelet_prosody_toolkit/issues .
