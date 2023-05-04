@@ -1,0 +1,78 @@
+[build-system]
+requires = ["poetry_core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "wavelet-prosody-toolkit"
+version = "1.0"
+authors = [
+  "Antti Suni <antti.suni@helsinki.fi>",
+  "Sébastien Le Maguer <lemagues@tcd.ie>"
+]
+description = "Prosody wavelet analysis toolkit"
+readme = "README.rst"
+classifiers = [
+  'Development Status :: 4 - Beta',
+  # Audience
+  'Intended Audience :: Science/Research',
+  # Topics
+  'Topic :: Multimedia :: Sound/Audio :: Speech',
+  'Topic :: Scientific/Engineering :: Information Analysis',
+  'Topic :: Scientific/Engineering :: Visualization',
+  # Pick your license as you wish
+  'License :: OSI Approved :: MIT License',
+  # Python version (FIXME: fix the list of python version based on travis results)
+  'Programming Language :: Python :: 3',
+  'Programming Language :: Python :: 3.7',
+  'Programming Language :: Python :: 3.8',
+  'Programming Language :: Python :: 3.9',
+  'Programming Language :: Python :: 3.10',
+  'Programming Language :: Python :: 3.11',
+]
+
+[tool.poetry.dependencies]
+# Python
+python = ">=3.7"
+# Configuration
+pyyaml = "*"
+# Math
+pycwt = "*"
+numpy = "*"
+scipy = "*"
+# Audio/speech
+soundfile = "*"
+tgt = "*"
+wavio = "*"
+# Parallel
+joblib = "*"
+# GUI (so optional)
+pyqt5 = { version = "*", optional = true }
+matplotlib = { version = "*", optional = true }
+# Reaper (optional)
+pyreaper = { version = "*", optional = true }
+# Documentation
+sphinx = { version = ">=1.4", optional = true }
+sphinx_rtd_theme = { version = "*", optional = true }
+numpydoc = { version = "*", optional = true }
+
+[tool.poetry.scripts]
+prosody_labeller = "wavelet_prosody_toolkit.prosody_labeller:main"
+cwt_analysis_synthesis = "wavelet_prosody_toolkit.cwt_analysis_synthesis:main"
+wavelet_gui = "wavelet_prosody_toolkit.wavelet_gui:main"
+
+[tool.poetry.extras]
+gui = ["pyqt5", "matplotlib"]
+reaper = ["pyreaper"]
+docs = ["sphinx", "sphinx_rtd_theme", "numpydoc"]
+full = [
+  "pyqt5",
+  "matplotlib",
+  "pyreaper",
+  "sphinx",
+  "sphinx_rtd_theme",
+  "numpydoc"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/asuni/wavelet_prosody_toolkit"
+"Bug Tracker" = "https://github.com/asuni/wavelet_prosody_toolkit/issues"
