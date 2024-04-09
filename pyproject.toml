@@ -1,16 +1,18 @@
 [build-system]
-requires = ["poetry_core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=61",
+]
 
-[tool.poetry]
-name = "wavelet-prosody-toolkit"
+[project]
+name = "wavelet_prosody_toolkit"
 version = "1.0"
 authors = [
-  "Antti Suni <antti.suni@helsinki.fi>",
-  "Sébastien Le Maguer <lemagues@tcd.ie>"
+  {name="Antti Suni", email="antti.suni@helsinki.fi"},
+  {name="Sébastien Le Maguer", email="sebastien.lemaguer@helsinki.fi"}
 ]
 description = "Prosody wavelet analysis toolkit"
-readme = "README.rst"
+readme = {file="README.rst", content-type="text/x-rst"}
 classifiers = [
   'Development Status :: 4 - Beta',
   # Audience
@@ -29,38 +31,18 @@ classifiers = [
   'Programming Language :: Python :: 3.10',
   'Programming Language :: Python :: 3.11',
 ]
+dependencies = [
+  "pyyaml",
+  "pycwt",
+  "numpy",
+  "scipy",
+  "soundfile",
+  "tgt",
+  "wavio",
+  "joblib"
+]
 
-[tool.poetry.dependencies]
-# Python
-python = ">=3.7"
-# Configuration
-pyyaml = "*"
-# Math
-pycwt = "*"
-numpy = "*"
-scipy = "*"
-# Audio/speech
-soundfile = "*"
-tgt = "*"
-wavio = "*"
-# Parallel
-joblib = "*"
-# GUI (so optional)
-pyqt5 = { version = "*", optional = true }
-matplotlib = { version = "*", optional = true }
-# Reaper (optional)
-pyreaper = { version = "*", optional = true }
-# Documentation
-sphinx = { version = ">=1.4", optional = true }
-sphinx_rtd_theme = { version = "*", optional = true }
-numpydoc = { version = "*", optional = true }
-
-[tool.poetry.scripts]
-prosody_labeller = "wavelet_prosody_toolkit.prosody_labeller:main"
-cwt_analysis_synthesis = "wavelet_prosody_toolkit.cwt_analysis_synthesis:main"
-wavelet_gui = "wavelet_prosody_toolkit.wavelet_gui:main"
-
-[tool.poetry.extras]
+[project.optional-dependencies]
 gui = ["pyqt5", "matplotlib"]
 reaper = ["pyreaper"]
 docs = ["sphinx", "sphinx_rtd_theme", "numpydoc"]
@@ -72,7 +54,39 @@ full = [
   "sphinx_rtd_theme",
   "numpydoc"
 ]
+dev = ["pre-commit"]
+
+
+[project.scripts]
+prosody_labeller = "wavelet_prosody_toolkit.prosody_labeller:main"
+cwt_analysis_synthesis = "wavelet_prosody_toolkit.cwt_analysis_synthesis:main"
+wavelet_gui = "wavelet_prosody_toolkit.wavelet_gui:main"
 
 [project.urls]
-"Homepage" = "https://github.com/asuni/wavelet_prosody_toolkit"
-"Bug Tracker" = "https://github.com/asuni/wavelet_prosody_toolkit/issues"
+Homepage = "https://github.com/asuni/wavelet_prosody_toolkit"
+Issues = "https://github.com/asuni/wavelet_prosody_toolkit/issues"
+git = "https://github.com/asuni/wavelet_prosody_toolkit.git"
+
+[tool.setuptools]
+packages = ["wavelet_prosody_toolkit"]
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+  \.toml
+  |\.sh
+  |\.git
+  |\.ini
+  |Dockerfile
+  |Jenkinfile
+)/
+'''
+
+[tool.flake8]
+max-line-length = 120
+
+[tool.basedpyright]
+typeCheckingMode = "standard"

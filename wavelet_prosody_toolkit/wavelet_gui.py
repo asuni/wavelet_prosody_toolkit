@@ -31,8 +31,8 @@ import yaml
 # QT related imports
 try:
     from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
-    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-    from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qt import NavigationToolbar2QT as NavigationToolbar
 
     # Plotting configuration
     from matplotlib.ticker import MaxNLocator

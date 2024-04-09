@@ -18,12 +18,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 import numpy as np
-from . import misc, cwt_utils, filter, f0_processing, smooth_and_interp
+from . import misc, cwt_utils, f0_processing, smooth_and_interp
 
-import sys
-from scipy.io import wavfile
 import scipy.signal
-
+from scipy.signal import windows
 
 def _get_f0(spec, energy, min_hz, max_hz, thresh, sil_thresh):
     """
@@ -48,23 +46,12 @@ def _track_pitch(pic, min_hz=50, max_hz=450,thresh=0.1,energy_thresh=1.0, DEBUG=
     following with refinement steps based on the assumption of continuity of the pitch track
     """
 
-    if DEBUG:
-        import pylab
-        from matplotlib import colors
-
-
     pitch = np.zeros(pic.shape[0])
 
     # calc energy threshold for voicing
     log_energy = np.log(np.sum(pic, axis=1))
     energy_thresh=np.min(smooth_and_interp.smooth(log_energy,20))+energy_thresh
     pic_smooth = pic*scipy.ndimage.gaussian_filter(pic, [2,5])
-
-    if DEBUG:
-        pylab.plot(log_energy)
-        pylab.plot(np.full(len(log_energy), energy_thresh))
-        pylab.show()
-
 
     # find frequency bins with max_energy
     for i in range(0, pic_smooth.shape[0]):
@@ -74,7 +61,6 @@ def _track_pitch(pic, min_hz=50, max_hz=450,thresh=0.1,energy_thresh=1.0, DEBUG=
 
     # second pass with soft constraints
     n_iters = 3
-    from scipy.signal import gaussian
 
 
     for iter in range(0, n_iters):
@@ -83,11 +69,10 @@ def _track_pitch(pic, min_hz=50, max_hz=450,thresh=0.1,energy_thresh=1.0, DEBUG=
         smoothed = smooth_and_interp.smooth(smoothed, int(200./(iter+1.)))
 
 
-
         # gradually thightening gaussian window centered on current estimate to softly constrain next iteration
         win_len = 800
 
-        g_window = gaussian(win_len, int(np.mean(smoothed)*(1./(iter+1.)**2)))
+        g_window = windows.gaussian(win_len, int(np.mean(smoothed)*(1./(iter+1.)**2)))
         #g_window = gaussian(win_len, (1./(iter+2)**2)))
 
         for i in range(0, pic.shape[0]):
@@ -130,7 +115,7 @@ def inst_freq_pitch(wav_form, fs, min_hz=50, max_hz=400, acorr_weight=10., voici
 
     voicing_thresh = (voicing_thresh-50.0) / 100.0
     acorr_weight /= 100.
-    sample_rate = 4000.0
+    sample_rate = 4000
     tmp_wav_form = misc.resample(wav_form, fs, sample_rate)
     #params = scipy.signal.resample_poly(params, 1., int(round(fs/sample_rate)))
     tmp_wav_form = misc.normalize_std(tmp_wav_form)
@@ -189,11 +174,6 @@ def inst_freq_pitch(wav_form, fs, min_hz=50, max_hz=400, acorr_weight=10., voici
     logger.debug("tracking pitch..")
 
     pitch = _track_pitch(pic,min_hz, max_hz, voicing_thresh, DEBUG=DEBUG)
-
-    if DEBUG:
-        pylab.imshow(pic[:, 0:].T, interpolation='nearest', origin='lower',aspect='auto')
-        pylab.plot(pitch,'black',linewidth=1)
-        pylab.show()
 
     logger.debug("tracking pitch done.")
     return (pitch,pic)
