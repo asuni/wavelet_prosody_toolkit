@@ -44,7 +44,7 @@ def read_wav(filename):
     # various packages tried.. difficulties with channels, 24bit files, various dtypes
     # pysoundfile appears to mostly work
 
-    data, samplerate = soundfile.read(filename, dtype='int16', always_2d=True)
+    data, samplerate = soundfile.read(filename, always_2d=True)
 
     return (samplerate, data[:, 0].copy(order='C'))
 
