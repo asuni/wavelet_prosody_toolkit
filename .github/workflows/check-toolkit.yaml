@@ -20,7 +20,7 @@ jobs:
 
       # Install everything
       - name: Install wavelet-prosody-toolkit
-        run: pip install -e .
+        run: pip install -e .[full]
 
       # Linux and macOS
       - name: Run the test
