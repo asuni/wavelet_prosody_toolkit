@@ -291,7 +291,7 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
         loma.plot_loma(pos_loma, ax[4], color="black")
         loma.plot_loma(neg_loma, ax[4], color="white")
         ax[4].set_ylabel("Wavelet & \n LOMA", rotation="horizontal", ha="right", va="center")
-        
+
         # Add labels
         prom_text =  prominences[:, 1]/(np.max(prominences[:, 1]))*2.5 + 0.5
         lab.plot_labels(labels, ypos=0.3, size=6, prominences=prom_text, fig=ax[5], boundary=False, background=False)
@@ -300,13 +300,13 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
             for a in [0, 1, 2, 3, 4, 5]:
                 ax[a].axvline(x=labels[i][0], color='black',
                               linestyle="-", linewidth=0.2, alpha=0.5)
-                
+
                 ax[a].axvline(x=labels[i][1], color='black',
                               linestyle="-", linewidth=0.2+boundaries[i][-1] * 2,
                               alpha=0.5)
 
         plt.xlim(0, cwt.shape[1])
-    
+
         # Align ylabels and remove axis
         fig.align_ylabels(ax)
         for i in range(len(ax)-1):
@@ -348,13 +348,9 @@ def analysis_batch_wrap(input_file, cfg, annotation_dir=None, output_dir=None, p
         traceback.print_exc(file=sys.stderr)
 
 
-###############################################################################
-# Main function
-###############################################################################
-def main():
+def entry_point(args, logger):
     """Main entry function
     """
-    global args, logger
 
     # Load configuration
     configuration = defaultdict()
@@ -398,7 +394,7 @@ def main():
 ###############################################################################
 #  Envelopping
 ###############################################################################
-if __name__ == '__main__':
+def main():
     try:
         parser = argparse.ArgumentParser(description="Command line application to analyze prosody using wavelets.")
 
@@ -435,7 +431,7 @@ if __name__ == '__main__':
         logger.info("start time = " + time.asctime())
 
         # Running main function <=> run application
-        main()
+        entry_point(args, logger)
 
         # Debug time
         logger.info("end time = " + time.asctime())
@@ -453,3 +449,7 @@ if __name__ == '__main__':
         logging.error(str(e))
         traceback.print_exc(file=sys.stderr)
         sys.exit(-1)
+
+
+if __name__ == '__main__':
+    main()
