@@ -23,20 +23,23 @@ logger = logging.getLogger(__name__)
 
 
 
-def extract_energy(waveform, fs=16000, min_freq=200, max_freq=3000, method='rms', target_rate=200):
+def extract_energy(orig_waveform, fs=16000, min_freq=200, max_freq=3000, method='rms', target_rate=200):
     #python 2, 3 compatibility hack
     try:
         basestring
     except NameError:
         basestring = str
-    # accept both wav-files and waveform arrays
-    if isinstance(waveform, basestring):
 
-        (fs, waveform) = misc.read_wav(waveform)
+
+    # accept both wav-files and waveform arrays
+    if isinstance(orig_waveform, basestring):
+        (fs, waveform) = misc.read_wav(orig_waveform)
+
+    # NOTE: reconvert to int to keep the consistency
+    waveform = orig_waveform / 3.0517578125e-5
 
     import scipy.signal
     from . import filter
-
     lp_waveform =  filter.butter_bandpass_filter(waveform, min_freq, max_freq, fs, order=5)
 
     # verify that filtering works
@@ -54,6 +57,7 @@ def extract_energy(waveform, fs=16000, min_freq=200, max_freq=3000, method='rms'
 
     elif method == "rms":
         energy=np.sqrt(lp_waveform**2)
+
     logger.debug("fs = %d, target_rate = %d, fs/target_rate = %f" % (fs, target_rate, fs/target_rate))
     energy = misc.resample(energy, fs, target_rate)
     #energy = scipy.signal.resample_poly(energy, 1., int(round(fs/target_rate)))
