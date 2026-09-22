@@ -2,46 +2,55 @@
 # -*- coding: utf-8 -*-
 """
 AUTHOR
-    - Antti Suni <antti.suni@helsinki.fi>
-    - Sébastien Le Maguer <lemagues@tcd.ie>
+   - Antti Suni <antti.suni@helsinki.fi>
+   - Sébastien Le Maguer <sebastien.lemaguer@helsinki.fi>
 
 DESCRIPTION
-    usage: wavelet_gui [-h] [-v] [-c CONFIG]
+   usage: wavelet_gui [-h] [-v] [-c CONFIG]
 
-    GUI application to analyze prosody using wavelets.
+   GUI application to analyze prosody using wavelets.
 
-    optional arguments:
-      -h, --help            		show this help message and exit
-      -v, --verbosity       		increase output verbosity
-      -c CONFIG, --config CONFIG	configuration file
+   optional arguments:
+     -h, --help            		show this help message and exit
+     -v, --verbosity       		increase output verbosity
+     -c CONFIG, --config CONFIG	configuration file
 
-LICENSE
-    See https://github.com/asuni/wavelet_prosody_toolkit/blob/master/LICENSE.txt
+ LICENSE
+   See https://github.com/asuni/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """
 
+# Core Python
 import sys
 import os
-import traceback
 import argparse
-import time
+
+# Messaging/logging
+import traceback
 import logging
+from logging.config import dictConfig
+try:
+    import pythonjsonlogger
+    JSON_LOGGER = True
+except Exception:
+    JSON_LOGGER = False
+
 
 import yaml
 
 # QT related imports
 try:
-    from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
+    from PySide6 import QtCore, QtGui, QtWidgets, QtMultimedia
     from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
     from matplotlib.backends.backend_qt import NavigationToolbar2QT as NavigationToolbar
 
     # Plotting configuration
-    from matplotlib.ticker import MaxNLocator
+    from matplotlib.ticker import MaxNLocator, FixedLocator
     # from matplotlib.figure import Figure
     import matplotlib.pyplot as plt
     # import matplotlib.gridspec as gridspec
     import matplotlib.ticker as ticker
 except ModuleNotFoundError:
-    print("Qt and/or Matplotlib installed, install the [gui] setup to install the toolkit")
+    print("Qt and/or Matplotlib is installed, install the [gui] setup to install the toolkit")
     sys.exit(-1)
 
 # Numpy
@@ -78,18 +87,22 @@ try:
 except NameError:
     unicode = str
 
-# Analysis sample rate
-ANALYSIS_SR = 8000.0
+###############################################################################
+# global constants
+###############################################################################
+LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
+ANALYSIS_SR = 8000.0 # Analysis sample rate
+PLOT_SR = 200.0      # Plot sample rate
+DEFAULT_CMAP = "viridis"
 
-# Plot sample rate
-PLOT_SR = 200.0
-
+if not QtWidgets.QApplication.instance():
+    APP = QtWidgets.QApplication(["SpINY"])
+else:
+    APP = QtWidgets.QApplication.instance()
 
 ###############################################################################
 # Logging
 ###############################################################################
-# List of logging levels used to setup everything using verbose option
-LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
 
 class QtHandler(logging.Handler):
@@ -132,7 +145,7 @@ def exception_log(logger, head_msg, ex, level=logging.ERROR):
 
     """
     logger.log(level, "%s:" % head_msg)
-    logger.log(level, "<br />".join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
+    logger.log(level, "<br />".join(traceback.format_exception(ex)))
 
 
 ###############################################################################
@@ -197,6 +210,11 @@ class SigWindow(QtWidgets.QDialog):
 
         # Define the logger
         self.logger = logging.getLogger(__name__)
+
+
+        self._output_device = QtMultimedia.QAudioOutput()
+        self._player = QtMultimedia.QMediaPlayer()
+        self._player.setAudioOutput(self._output_device)
 
         ##########################################
         # Define internal variables
@@ -354,13 +372,13 @@ class SigWindow(QtWidgets.QDialog):
         # Define some key helpers
         ##########################################
         # Add another exit shortcut!
-        self.actionExit = QtWidgets.QAction(('E&xit'), self)
+        self.actionExit = QtGui.QAction(('E&xit'), self)
         self.actionExit.setShortcut(QtGui.QKeySequence("Ctrl+Q"))
         self.addAction(self.actionExit)
         self.actionExit.triggered.connect(self.close)
 
         # Add fullscreen shortcut
-        fullscreen_shortcut = QtWidgets.QAction(('Fullscreen'), self)
+        fullscreen_shortcut = QtGui.QAction(('Fullscreen'), self)
         fullscreen_shortcut.setShortcut(QtGui.QKeySequence("F11"))
         self.addAction(fullscreen_shortcut)
         fullscreen_shortcut.triggered.connect(self.switchFullScreen)
@@ -672,7 +690,7 @@ class SigWindow(QtWidgets.QDialog):
         self.status.showMessage("Wavelet Prosody Analyzer | processing " + curr.text() + "...")
         self.populateTierList()
 
-        QtWidgets.qApp.processEvents()
+        APP.processEvents()
 
         self.fUpdate = dict.fromkeys(self.fUpdate, True)
         self.analysis()
@@ -744,7 +762,7 @@ class SigWindow(QtWidgets.QDialog):
 
         if len(self.wav_files) > 0:
             self.status.showMessage("processing " + self.wav_files[i])
-            QtWidgets.qApp.processEvents()
+            APP.processEvents()
             self.filelist.setCurrentRow(0)
 
     def play(self):
@@ -766,11 +784,11 @@ class SigWindow(QtWidgets.QDialog):
         fname = tempfile.mkstemp()[1]
         misc.write_wav(fname, wav_slice, self.orig_sr)
 
-        # FIXME: QSound.play used to fail silently on some systems
         try:
-            QtMultimedia.QSound.play(fname)
+            self._player.setSource(QtCore.QUrl.fromLocalFile(fname))
+            self._player.play()
         except Exception as ex:
-            exception_log(self.logger, "Qsound does not play (use play command instead)", ex, logging.DEBUG)
+            exception_log(self.logger, "Qsound does not play (use play command instead)", ex, logging.WARN)
             os.system("play " + fname)
 
     # main function
@@ -794,7 +812,7 @@ class SigWindow(QtWidgets.QDialog):
             self.ax[0].cla()
             self.orig_sr, self.sig = misc.read_wav(self.cur_wav)
             self.plot_len = int(len(self.sig) * (PLOT_SR/self.orig_sr))
-            self.ax[0].specgram(self.sig,mode="magnitude", NFFT=200, noverlap=40, Fs=self.orig_sr, xextent=[0, self.plot_len], cmap="plasma")
+            self.ax[0].specgram(self.sig,mode="magnitude", NFFT=200, noverlap=40, Fs=self.orig_sr, xextent=[0, self.plot_len], cmap=DEFAULT_CMAP)
 
         if self.fUpdate['energy']:
             # 'energy' is just a smoothed envelope here
@@ -953,7 +971,7 @@ class SigWindow(QtWidgets.QDialog):
             self.scales*=PLOT_SR
         if self.fUpdate['tiers'] or self.fUpdate['cwt']:
             import matplotlib.colors as colors
-            self.ax[-1].imshow(self.cwt,aspect="auto", cmap="inferno", interpolation="bicubic")
+            self.ax[-1].imshow(self.cwt,aspect="auto", cmap=DEFAULT_CMAP, interpolation="bicubic")
             #self.ax[-1].contourf(np.real(self.cwt), 100,
             #                     norm=colors.SymLogNorm(linthresh=0.01, linscale=0.05, vmin=-1.0, vmax=1.0),
             #                     cmap="jet")
@@ -1015,21 +1033,22 @@ class SigWindow(QtWidgets.QDialog):
         #
         # save analyses
         if labels:
-            pass  # FIXME: ????
             loma.save_analyses(os.path.splitext(unicode(self.cur_wav))[0]+".prom",
                                labels,
                                self.prominences,
                                self.boundaries, PLOT_SR)
 
+        # Set axes limits
         self.ax[-1].set_ylim(0,n_scales)
         self.ax[-1].set_xlim(0,len(self.params))
+
+        # Set axes labels
         self.ax[0].set_ylabel("Spec (Hz)")
         self.ax[1].set_ylabel("F0 (Hz)")
         self.ax[2].set_ylabel("Signals")
-
-        self.ax[2].set_yticklabels(["sum", "dur", "en", "f0"])
         self.ax[3].set_ylabel("Wavelet scale (Hz)")
 
+        # Set axes ticks
         plt.setp([a.get_xticklabels() for a in self.ax[0:-1]], visible=False)
         vals = self.ax[-1].get_xticks()[0:]
         ticks_x = ticker.FuncFormatter(lambda vals, p:'{:1.2f}'.format(float(vals/PLOT_SR)))
@@ -1047,14 +1066,14 @@ class SigWindow(QtWidgets.QDialog):
             nbins = len(self.ax[i].get_yticklabels())+1
             self.ax[i].yaxis.set_major_locator(MaxNLocator(nbins=nbins, prune='lower'))
         self.ax[2].set_yticks([0,4,8,12])
-        self.figure.subplots_adjust(hspace=0, wspace=0)
+        self.ax[2].set_yticklabels(["sum", "dur", "en", "f0"])
 
+        # Adjust and draw
+        self.figure.subplots_adjust(hspace=0, wspace=0)
         if prev_zoom:
             self.ax[3].axis(prev_zoom)
-
         self.canvas.draw()
         self.canvas.show()
-
         self.fUpdate = dict.fromkeys(self.fUpdate, False)
 
 
@@ -1095,90 +1114,140 @@ def apply_configuration(current_configuration, updating_part):
     return current_configuration
 
 
-##############################################################################################
-# Main routine definition
-##############################################################################################
-def main():
-    """Entry point which start the QT application
+###############################################################################
+# Functions
+###############################################################################
+def configure_logger(args) -> logging.Logger:
+    """Setup the global logging configurations and instanciate a specific logger for the current script
+
+    Parameters
+    ----------
+    args : dict
+        The arguments given to the script
+
+    Returns
+    --------
+    the logger: logger.Logger
     """
-    try:
-        parser = argparse.ArgumentParser(description="GUI application to analyze prosody using wavelets.")
+    # create logger and formatter
+    logger = logging.getLogger()
 
-        # Add options
-        parser.add_argument("-v", "--verbosity", action="count", default=0,
-                            help="increase output verbosity")
+    # Verbose level => logging level
+    log_level = args.verbosity
+    if args.verbosity >= len(LEVEL):
+        log_level = len(LEVEL) - 1
+        # logging.warning("verbosity level is too high, I'm gonna assume you're taking the highest (%d)" % log_level)
 
-        # Load default configuration
-        parser.add_argument("-c", "--config", default=None, help="configuration file")
+    # Define the default logger configuration
+    logging_config = dict(
+        version=1,
+        disable_existing_logger=True,
+        formatters={
+            "f": {
+                "format": "[%(asctime)s] [%(levelname)s] — [%(name)s — %(funcName)s:%(lineno)d] %(message)s",
+                "datefmt": "%d/%b/%Y: %H:%M:%S ",
+            }
+        },
+        handlers={
+            "h": {
+                "class": "logging.StreamHandler",
+                "formatter": "f",
+                "level": LEVEL[log_level],
+            }
+        },
+        root={"handlers": ["h"], "level": LEVEL[log_level]},
+    )
 
-        # Parsing arguments
-        args = parser.parse_args()
+    # Add file handler if file logging required
+    if args.log_file is not None:
+        cur_formatter_key = "f"
+        if JSON_LOGGER:
+            logging_config["formatters"]["j"] = {
+                '()': 'pythonjsonlogger.json.JsonFormatter',
+                'fmt': '%(asctime)s %(levelname)s %(filename)s %(lineno)d %(message)s',
+                'rename_fields': {'asctime': 'time', 'levelname': 'level', 'lineno': 'line_number'}
+            }
+            cur_formatter_key = "j"
 
-        # Verbose level => logging level
-        log_level = args.verbosity
-        if (args.verbosity >= len(LEVEL)):
-            log_level = len(LEVEL) - 1
-            logging.basicConfig(level=LEVEL[log_level])
-            logging.warning("verbosity level is too high, I'm gonna assume you're taking the highest (%d)" % log_level)
-        else:
-            logging.basicConfig(level=LEVEL[log_level])
+        logging_config["handlers"]["f"] = {
+            "class": "logging.FileHandler",
+            "formatter": cur_formatter_key,
+            "level": LEVEL[log_level],
+            "filename": args.log_file,
+        }
+        logging_config["root"]["handlers"] = ["h", "f"]
 
-        global_logger = logging.getLogger()
-        global_logger.addHandler(HANDLER)
+    # Setup logging configuration
+    dictConfig(logging_config)
 
-        # Load configuration
-        configuration = defaultdict()
-        with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/default.yaml", 'r') as f:
-            configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f, Loader=yaml.FullLoader)))
-            logging.debug("Default configuration loaded")
-            logging.debug(configuration)
+    # Retrieve and return the logger dedicated to the script
+    logger = logging.getLogger(__name__)
+    return logger
 
-        if args.config:
-            try:
-                with open(args.config, 'r') as f:
-                    configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f, Loader=yaml.FullLoader)))
-                    logging.debug("configuration filled with user part")
-                    logging.debug(configuration)
-            except IOError as ex:
 
-                logging.error("configuration file " + args.config + " could not be loaded:")
-                logging.error(ex.msg)
-                sys.exit(1)
+def define_argument_parser() -> argparse.ArgumentParser:
+    """Defines the argument parser
 
-        # Debug time
-        start_time = time.time()
-        logging.info("start time = " + time.asctime())
+    Returns
+    --------
+    The argument parser: argparse.ArgumentParser
+    """
+    parser = argparse.ArgumentParser(description="")
 
-        # Running main function <=> run application
-        app = QtWidgets.QApplication.instance()
+    # Add logging options
+    parser.add_argument("-l", "--log_file", default=None, help="Logger file")
+    parser.add_argument(
+        "-v",
+        "--verbosity",
+        action="count",
+        default=0,
+        help="increase output verbosity",
+    )
 
-        if not app:
-            app = QtWidgets.QApplication(sys.argv)
+    # Add performative options
+    parser.add_argument("-c", "--config", default=None, help="configuration file")
 
-        main = SigWindow(configuration)
-
-        main.show()
-
-        # Debug time
-        logging.info("end time = " + time.asctime())
-        logging.info('TOTAL TIME IN MINUTES: %02.2f' %
-                     ((time.time() - start_time) / 60.0))
-
-        # Exit program
-        sys.exit(app.exec_())
-    except KeyboardInterrupt as e:  # Ctrl-C
-        raise e
-    except SystemExit as e:  # sys.exit()
-        pass
-    except Exception as e:
-        logging.error('ERROR, UNEXPECTED EXCEPTION')
-        logging.error(str(e))
-        traceback.print_exc(file=sys.stderr)
-        sys.exit(-1)
+    # Return parser
+    return parser
 
 
 ###############################################################################
-#  Envelopping
+# Entry point
 ###############################################################################
-if __name__ == '__main__':
+def main():
+    # Initialization of the argument parser and the logger
+    arg_parser = define_argument_parser()
+    args = arg_parser.parse_args()
+    logger = configure_logger(args)
+
+
+    # Load configuration
+    configuration = defaultdict()
+    with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/default.yaml", 'r') as f:
+        configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f, Loader=yaml.FullLoader)))
+        logging.debug("Default configuration loaded")
+        logging.debug(configuration)
+
+    if args.config:
+        try:
+            with open(args.config, 'r') as f:
+                configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f, Loader=yaml.FullLoader)))
+                logging.debug("configuration filled with user part")
+                logging.debug(configuration)
+        except IOError as ex:
+
+            logging.error("configuration file " + args.config + " could not be loaded:")
+            logging.error(ex.msg)
+            sys.exit(1)
+
+    # Starting the app
+    main = SigWindow(configuration)
+    main.show()
+    sys.exit(APP.exec())
+
+
+###############################################################################
+# Wrapping for directly calling the scripts
+###############################################################################
+if __name__ == "__main__":
     main()

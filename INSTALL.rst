@@ -47,7 +47,7 @@ We then use the setup script to install the rest of the dependencies:
 
 .. code:: sh
 
-    pip install -e .[full]
+    pip install -e .[gui,reaper,dev]
 
 To start the Wavelet Prosody Analyzer GUI, run the following commands:
 

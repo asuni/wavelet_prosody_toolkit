@@ -6,13 +6,14 @@ requires = [
 
 [project]
 name = "wavelet_prosody_toolkit"
-version = "1.0"
+version = "1.1.0"
 authors = [
   {name="Antti Suni", email="antti.suni@helsinki.fi"},
   {name="Sébastien Le Maguer", email="sebastien.lemaguer@helsinki.fi"}
 ]
 description = "Prosody wavelet analysis toolkit"
 readme = {file="README.rst", content-type="text/x-rst"}
+requires-python='>=3.11'
 classifiers = [
   'Development Status :: 4 - Beta',
   # Audience
@@ -23,43 +24,45 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Visualization',
   # Pick your license as you wish
   'License :: OSI Approved :: MIT License',
-  # Python version (FIXME: fix the list of python version based on travis results)
   'Programming Language :: Python :: 3',
-  'Programming Language :: Python :: 3.7',
-  'Programming Language :: Python :: 3.8',
-  'Programming Language :: Python :: 3.9',
-  'Programming Language :: Python :: 3.10',
   'Programming Language :: Python :: 3.11',
+  'Programming Language :: Python :: 3.12',
+  'Programming Language :: Python :: 3.13',
+  'Programming Language :: Python :: 3.14',
 ]
 dependencies = [
-  "pyyaml",
-  "pycwt",
-  "numpy",
-  "scipy",
-  "soundfile",
-  "tgt",
-  "wavio",
-  "joblib"
+  "pyyaml>=6.0.3",
+  "pycwt>=0.5.0b0",
+  "numpy>=2.4.6",
+  "scipy>=1.12",
+  "soundfile>=0.14.0",
+  "tgt>=1.5",
+  "wavio>=0.0.9",
+  "joblib>=1.6.0"
 ]
 
 [project.optional-dependencies]
-gui = ["pyqt5", "matplotlib"]
-reaper = ["pyreaper"]
-docs = ["sphinx", "sphinx_rtd_theme", "numpydoc"]
-full = [
-  "pyqt5",
-  "matplotlib",
-  "pyreaper",
-  "sphinx",
-  "sphinx_rtd_theme",
-  "numpydoc"
+gui = [
+  "pyside6>=6.11.2",
+  "matplotlib>=3.11.2"
 ]
-dev = ["pre-commit"]
+reaper = [
+  "pyreaper>=0.0.11"
+]
+docs = [
+  "sphinx>=9.0",
+  "sphinx_rtd_theme>=3.1.0",
+  "numpydoc>=1.11.0"
+]
+dev = [
+  "pre-commit"
+]
 
 
 [project.scripts]
 prosody_labeller = "wavelet_prosody_toolkit.prosody_labeller:main"
 cwt_analysis_synthesis = "wavelet_prosody_toolkit.cwt_analysis_synthesis:main"
+cwt_global_spectrum = "wavelet_prosody_toolkit.cwt_global_spectrum:main"
 wavelet_gui = "wavelet_prosody_toolkit.wavelet_gui:main"
 
 [project.urls]

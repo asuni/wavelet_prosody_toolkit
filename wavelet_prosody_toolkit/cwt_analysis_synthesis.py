@@ -3,7 +3,7 @@
 """
 AUTHOR
     - Antti Suni <antti.suni@helsinki.fi>
-    - Sébastien Le Maguer <lemagues@tcd.ie>
+    - Sébastien Le Maguer <lemagues@helsinki.fi>
 
 DESCRIPTION
 
@@ -32,33 +32,150 @@ LICENSE
     See https://github.com/asuni/wavelet_prosody_toolkit/blob/master/LICENSE.txt
 """
 
+
+# Core Python
 import sys
 import os
 import traceback
 import argparse
-import time
+import warnings
+
+# Messaging/logging
 import logging
+from logging.config import dictConfig
+try:
+    import pythonjsonlogger
+    JSON_LOGGER = True
+except Exception:
+    JSON_LOGGER = False
 
+# Configuration
 import yaml
-
-# Collections
 from collections import defaultdict
 
-import warnings
+# Data
+import numpy as np
 
 # Wavelet import
 from wavelet_prosody_toolkit.prosody_tools import misc
 from wavelet_prosody_toolkit.prosody_tools import cwt_utils
 from wavelet_prosody_toolkit.prosody_tools import f0_processing
 
-import numpy as np
 
-# List of logging levels used to setup everything using verbose option
+###############################################################################
+# global constants
+###############################################################################
 LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 
-# FIXME: be more specific!
-warnings.simplefilter("ignore", np.ComplexWarning)  # Plotting can't deal with complex, but we don't care
+###############################################################################
+# Functions
+###############################################################################
+def configure_logger(args) -> logging.Logger:
+    """Setup the global logging configurations and instanciate a specific logger for the current script
 
+    Parameters
+    ----------
+    args : dict
+        The arguments given to the script
+
+    Returns
+    --------
+    the logger: logger.Logger
+    """
+    # create logger and formatter
+    logger = logging.getLogger()
+
+    # Verbose level => logging level
+    log_level = args.verbosity
+    if args.verbosity >= len(LEVEL):
+        log_level = len(LEVEL) - 1
+        # logging.warning("verbosity level is too high, I'm gonna assume you're taking the highest (%d)" % log_level)
+
+    # Define the default logger configuration
+    logging_config = dict(
+        version=1,
+        disable_existing_logger=True,
+        formatters={
+            "f": {
+                "format": "[%(asctime)s] [%(levelname)s] — [%(name)s — %(funcName)s:%(lineno)d] %(message)s",
+                "datefmt": "%d/%b/%Y: %H:%M:%S ",
+            }
+        },
+        handlers={
+            "h": {
+                "class": "logging.StreamHandler",
+                "formatter": "f",
+                "level": LEVEL[log_level],
+            }
+        },
+        root={"handlers": ["h"], "level": LEVEL[log_level]},
+    )
+
+    # Add file handler if file logging required
+    if args.log_file is not None:
+        cur_formatter_key = "f"
+        if JSON_LOGGER:
+            logging_config["formatters"]["j"] = {
+                '()': 'pythonjsonlogger.json.JsonFormatter',
+                'fmt': '%(asctime)s %(levelname)s %(filename)s %(lineno)d %(message)s',
+                'rename_fields': {'asctime': 'time', 'levelname': 'level', 'lineno': 'line_number'}
+            }
+            cur_formatter_key = "j"
+
+        logging_config["handlers"]["f"] = {
+            "class": "logging.FileHandler",
+            "formatter": cur_formatter_key,
+            "level": LEVEL[log_level],
+            "filename": args.log_file,
+        }
+        logging_config["root"]["handlers"] = ["h", "f"]
+
+    # Setup logging configuration
+    dictConfig(logging_config)
+
+    # Retrieve and return the logger dedicated to the script
+    logger = logging.getLogger(__name__)
+    return logger
+
+
+def define_argument_parser() -> argparse.ArgumentParser:
+    """Defines the argument parser
+
+    Returns
+    --------
+    The argument parser: argparse.ArgumentParser
+    """
+    parser = argparse.ArgumentParser(description="")
+
+    # Add logging options
+    parser.add_argument("-l", "--log_file", default=None, help="Logger file")
+    parser.add_argument(
+        "-v",
+        "--verbosity",
+        action="count",
+        default=0,
+        help="increase output verbosity",
+    )
+
+    # Add performative options
+    parser.add_argument("-B", "--binary-mode", action="store_true",
+                        help="Activate binary mode, else files are assumed to be a csv for the f0/wavelet part")
+    parser.add_argument("-c", "--configuration-file", default=None, help="configuration file")
+    parser.add_argument("-M", "--mode", type=int, default=0,
+                        help="script mode: 0=analysis, 1=synthesis")
+    parser.add_argument("-m", "--mean_f0", type=float, default=100,
+                        help="Mean f0 needed for synthesis (unsed for analysis modes)")
+    parser.add_argument("-P", "--plot", action="store_true",
+                        help="Plot the results")
+
+    # Add arguments
+    parser.add_argument("input_file", help="Input signal or F0 file")
+    parser.add_argument("output_file",
+                        help="output directory for analysis or filename for synthesis. " +
+                        "(Default: input_file directory [Analysis] or <input_file>.f0 [Synthesis])")
+
+    # Return parser
+    return parser
 
 ###############################################################################
 # Functions
@@ -138,14 +255,15 @@ def load_f0(input_file, binary_mode=False, configuration=None):
 
 
 ###############################################################################
-# Main function
+# Entry point
 ###############################################################################
-def run():
-    """Main entry function
+def main():
+    # Initialization of the argument parser and the logger
+    arg_parser = define_argument_parser()
+    args = arg_parser.parse_args()
+    logger = configure_logger(args)
 
-    This function contains the code needed to achieve the analysis and/or the synthesis
-    """
-    global args
+    # TODO: your code comes here
 
     warnings.simplefilter("ignore", FutureWarning)     # Plotting can't deal with complex, but we don't care
 
@@ -268,75 +386,7 @@ def run():
 
 
 ###############################################################################
-#  Envelopping
+# Wrapping for directly calling the scripts
 ###############################################################################
-def main():
-    """Entry point for CWT analysis/synthesis tool
-
-    This function is a wrapper to deal with arguments and logging.
-    """
-    global args
-
-    try:
-        parser = argparse.ArgumentParser(description="Tool for CWT analysis/synthesis of the F0")
-
-        # Add options
-        parser.add_argument("-B", "--binary-mode", action="store_true",
-                            help="Activate binary mode, else files are assumed to be a csv for the f0/wavelet part")
-        parser.add_argument("-c", "--configuration-file", default=None, help="configuration file")
-        parser.add_argument("-M", "--mode", type=int, default=0,
-                            help="script mode: 0=analysis, 1=synthesis")
-        parser.add_argument("-m", "--mean_f0", type=float, default=100,
-                            help="Mean f0 needed for synthesis (unsed for analysis modes)")
-        parser.add_argument("-P", "--plot", action="store_true",
-                            help="Plot the results")
-        parser.add_argument("-v", "--verbosity", action="count", default=0,
-                            help="increase output verbosity")
-
-        # Add arguments
-        parser.add_argument("input_file", help="Input signal or F0 file")
-        parser.add_argument("output_file",
-                            help="output directory for analysis or filename for synthesis. " +
-                            "(Default: input_file directory [Analysis] or <input_file>.f0 [Synthesis])")
-
-        # Parsing arguments
-        args = parser.parse_args()
-
-        # Verbose level => logging level
-        log_level = args.verbosity
-        if (args.verbosity >= len(LEVEL)):
-            log_level = len(LEVEL) - 1
-            logging.basicConfig(level=LEVEL[log_level])
-            logging.warning("verbosity level is too high, I'm gonna assume you're taking the highest (%d)" % log_level)
-        else:
-            logging.basicConfig(level=LEVEL[log_level])
-
-        # Debug time
-        start_time = time.time()
-        logging.info("start time = " + time.asctime())
-
-        # Running main function <=> run application
-        run()
-
-        # Debug time
-        logging.info("end time = " + time.asctime())
-        logging.info('TOTAL TIME IN MINUTES: %02.2f' %
-                     ((time.time() - start_time) / 60.0))
-
-        # Exit program
-        sys.exit(0)
-    except KeyboardInterrupt as e:  # Ctrl-C
-        raise e
-    except SystemExit as e:  # sys.exit()
-        pass
-    except Exception as e:
-        logging.error('ERROR, UNEXPECTED EXCEPTION')
-        logging.error(str(e))
-        traceback.print_exc(file=sys.stderr)
-        sys.exit(-1)
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
-# cwt_analysis_synthesis.py ends here

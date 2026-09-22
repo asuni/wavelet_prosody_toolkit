@@ -152,7 +152,7 @@ def inst_freq_pitch(wav_form, fs, min_hz=50, max_hz=400, acorr_weight=10., voici
         mags = scipy.signal.decimate(abs(wavelet_matrix), DEC, zero_phase=True)
 
         # normalize magnitudes
-        mags = (mags-mags.min())/mags.ptp()
+        mags = (mags-mags.min())/np.ptp(mags)
 
         # construct time-frequency image
         _assign_to_bins(pic, freqs, mags)

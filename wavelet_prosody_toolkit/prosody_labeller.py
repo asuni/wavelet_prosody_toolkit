@@ -3,28 +3,31 @@
 """
 AUTHOR
 
-    Sébastien Le Maguer <lemagues@tcd.ie>
+    Antti Suni <antti.suni@helsinki.fi
+    Sébastien Le Maguer <sebastien.lemaguer@helsinki.fi>
 
 DESCRIPTION
 
 LICENSE
     This script is in the public domain, free from copyrights or restrictions.
-    Created: 27 January 2020
+    Created: 21 September 2026
 """
 
-# System/default
+# Core Python
+import argparse
 import sys
 import os
 import glob
 
-# Arguments
-import argparse
-
 # Messaging/logging
 import traceback
-import time
 import logging
-import copy
+from logging.config import dictConfig
+try:
+    import pythonjsonlogger
+    JSON_LOGGER = True
+except Exception:
+    JSON_LOGGER = False
 
 # Configuration
 import yaml
@@ -49,7 +52,6 @@ from wavelet_prosody_toolkit.prosody_tools import smooth_and_interp
 
 # wavelet transform
 from wavelet_prosody_toolkit.prosody_tools import cwt_utils, loma, lab
-
 ###############################################################################
 # global constants
 ###############################################################################
@@ -58,34 +60,115 @@ LEVEL = [logging.WARNING, logging.INFO, logging.DEBUG]
 ###############################################################################
 # Functions
 ###############################################################################
-def get_logger(verbosity, log_file):
+def configure_logger(args) -> logging.Logger:
+    """Setup the global logging configurations and instanciate a specific logger for the current script
 
+    Parameters
+    ----------
+    args : dict
+        The arguments given to the script
+
+    Returns
+    --------
+    the logger: logger.Logger
+    """
     # create logger and formatter
-    logger = logging.getLogger("prosody labeller")
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logger = logging.getLogger()
 
     # Verbose level => logging level
-    log_level = verbosity
-    if (log_level >= len(LEVEL)):
+    log_level = args.verbosity
+    if args.verbosity >= len(LEVEL):
         log_level = len(LEVEL) - 1
-        logger.setLevel(log_level)
-        logging.warning("verbosity level is too high, I'm gonna assume you're taking the highest (%d)" % log_level)
-    else:
-        logger.setLevel(LEVEL[log_level])
+        # logging.warning("verbosity level is too high, I'm gonna assume you're taking the highest (%d)" % log_level)
 
-    # create console handler
-    ch = logging.StreamHandler()
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+    # Define the default logger configuration
+    logging_config = dict(
+        version=1,
+        disable_existing_logger=True,
+        formatters={
+            "f": {
+                "format": "[%(asctime)s] [%(levelname)s] — [%(name)s — %(funcName)s:%(lineno)d] %(message)s",
+                "datefmt": "%d/%b/%Y: %H:%M:%S ",
+            }
+        },
+        handlers={
+            "h": {
+                "class": "logging.StreamHandler",
+                "formatter": "f",
+                "level": LEVEL[log_level],
+            }
+        },
+        root={"handlers": ["h"], "level": LEVEL[log_level]},
+    )
 
-    # create file handler
-    if log_file is not None:
-        fh = logging.FileHandler(log_file)
-        logger.addHandler(fh)
+    # Add file handler if file logging required
+    if args.log_file is not None:
+        cur_formatter_key = "f"
+        if JSON_LOGGER:
+            logging_config["formatters"]["j"] = {
+                '()': 'pythonjsonlogger.json.JsonFormatter',
+                'fmt': '%(asctime)s %(levelname)s %(filename)s %(lineno)d %(message)s',
+                'rename_fields': {'asctime': 'time', 'levelname': 'level', 'lineno': 'line_number'}
+            }
+            cur_formatter_key = "j"
 
+        logging_config["handlers"]["f"] = {
+            "class": "logging.FileHandler",
+            "formatter": cur_formatter_key,
+            "level": LEVEL[log_level],
+            "filename": args.log_file,
+        }
+        logging_config["root"]["handlers"] = ["h", "f"]
+
+    # Setup logging configuration
+    dictConfig(logging_config)
+
+    # Retrieve and return the logger dedicated to the script
+    logger = logging.getLogger(__name__)
     return logger
 
 
+def define_argument_parser() -> argparse.ArgumentParser:
+    """Defines the argument parser
+
+    Returns
+    --------
+    The argument parser: argparse.ArgumentParser
+    """
+    parser = argparse.ArgumentParser(description="")
+
+    # Add logging options
+    parser.add_argument("-l", "--log_file", default=None, help="Logger file")
+    parser.add_argument(
+        "-v",
+        "--verbosity",
+        action="count",
+        default=0,
+        help="increase output verbosity",
+    )
+
+    # Add performative options
+    parser.add_argument("-a", "--annotation_directory", default=None, type=str,
+                        help="Annotation directory. If not specified, the tool will by default try to load annotations from the directory containing the wav files")
+    parser.add_argument("-j", "--nb_jobs", default=4, type=int,
+                        help="Define the number of jobs to run in parallel")
+    parser.add_argument("-c", "--config", default=None, type=str,
+                        help="configuration file")
+    parser.add_argument("-o", "--output_directory", default=None, type=str,
+                        help="The output directory. If not specified, the tool will output the result in a .prom file in the same directory than the wave files")
+    parser.add_argument("-p", "--plot", default=False, action="store_true",
+                        help="Plot the result (the number of jobs is de facto set to 1 if activated)")
+
+    # Add arguments
+    parser.add_argument("input", help="directory with wave files or wave file to analyze (a label file with the same basename should be available)")
+
+    # Return parser
+    return parser
+
+
+###############################################################################
+# Performative functions
+###############################################################################
 def apply_configuration(current_configuration, updating_part):
     """Utils to update the current configuration using the updating part
 
@@ -121,7 +204,7 @@ def apply_configuration(current_configuration, updating_part):
 
 
 
-def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot=False):
+def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot=0):
 
     # Load the wave file
     print("Analyzing %s starting..." % input_file)
@@ -144,6 +227,7 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
                                          voicing=cfg["f0"]["voicing_threshold"],
                                          #harmonics=cfg["f0"]["harmonics"],
                                          configuration=cfg["f0"]["pitch_tracker"])
+    np.set_printoptions(threshold=sys.maxsize)
     # interpolate, stylize
     pitch = f0_processing.process(raw_pitch)
 
@@ -291,7 +375,7 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
         loma.plot_loma(pos_loma, ax[4], color="black")
         loma.plot_loma(neg_loma, ax[4], color="white")
         ax[4].set_ylabel("Wavelet & \n LOMA", rotation="horizontal", ha="right", va="center")
-        
+
         # Add labels
         prom_text =  prominences[:, 1]/(np.max(prominences[:, 1]))*2.5 + 0.5
         lab.plot_labels(labels, ypos=0.3, size=6, prominences=prom_text, fig=ax[5], boundary=False, background=False)
@@ -300,13 +384,13 @@ def analysis(input_file, cfg, logger, annotation_dir=None, output_dir=None, plot
             for a in [0, 1, 2, 3, 4, 5]:
                 ax[a].axvline(x=labels[i][0], color='black',
                               linestyle="-", linewidth=0.2, alpha=0.5)
-                
+
                 ax[a].axvline(x=labels[i][1], color='black',
                               linestyle="-", linewidth=0.2+boundaries[i][-1] * 2,
                               alpha=0.5)
 
         plt.xlim(0, cwt.shape[1])
-    
+
         # Align ylabels and remove axis
         fig.align_ylabels(ax)
         for i in range(len(ax)-1):
@@ -349,14 +433,15 @@ def analysis_batch_wrap(input_file, cfg, annotation_dir=None, output_dir=None, p
 
 
 ###############################################################################
-# Main function
+# Entry point
 ###############################################################################
 def main():
-    """Main entry function
-    """
-    global args, logger
+    # Initialization of the argument parser and the logger
+    arg_parser = define_argument_parser()
+    args = arg_parser.parse_args()
+    logger = configure_logger(args)
 
-    # Load configuration
+        # Load configuration
     configuration = defaultdict()
     with open(os.path.dirname(os.path.realpath(__file__)) + "/configs/default.yaml", 'r') as f:
         configuration = apply_configuration(configuration, defaultdict(lambda: False, yaml.load(f, Loader=yaml.FullLoader)))
@@ -395,61 +480,9 @@ def main():
             analysis(f, configuration, logger, args.annotation_directory, args.output_directory, plot_flag)
 
 
+
 ###############################################################################
-#  Envelopping
+# Wrapping for directly calling the scripts
 ###############################################################################
-if __name__ == '__main__':
-    try:
-        parser = argparse.ArgumentParser(description="Command line application to analyze prosody using wavelets.")
-
-        # Add options
-        parser.add_argument("-a", "--annotation_directory", default=None, type=str,
-                            help="Annotation directory. If not specified, the tool will by default try to load annotations from the directory containing the wav files")
-        parser.add_argument("-j", "--nb_jobs", default=4, type=int,
-                            help="Define the number of jobs to run in parallel")
-        parser.add_argument("-c", "--config", default=None, type=str,
-                            help="configuration file")
-        parser.add_argument("-l", "--log_file", default=None, type=str,
-                            help="Logger file")
-        parser.add_argument("-o", "--output_directory", default=None, type=str,
-                            help="The output directory. If not specified, the tool will output the result in a .prom file in the same directory than the wave files")
-        parser.add_argument("-p", "--plot", default=False, action="store_true",
-                            help="Plot the result (the number of jobs is de facto set to 1 if activated)")
-        parser.add_argument("-v", "--verbosity", action="count", default=1,
-                            help="increase output verbosity")
-
-        # Add arguments
-        parser.add_argument("input", help="directory with wave files or wave file to analyze (a label file with the same basename should be available)")
-
-
-
-        # Parsing arguments
-        args = parser.parse_args()
-        if args.plot:
-            args.nb_jobs = 1
-        # Get the logger
-        logger = get_logger(args.verbosity, args.log_file)
-
-        # Debug time
-        start_time = time.time()
-        logger.info("start time = " + time.asctime())
-
-        # Running main function <=> run application
-        main()
-
-        # Debug time
-        logger.info("end time = " + time.asctime())
-        logger.info('TOTAL TIME IN MINUTES: %02.2f' %
-                     ((time.time() - start_time) / 60.0))
-
-        # Exit program
-        sys.exit(0)
-    except KeyboardInterrupt as e:  # Ctrl-C
-        raise e
-    except SystemExit:  # sys.exit()
-        pass
-    except Exception as e:
-        logging.error('ERROR, UNEXPECTED EXCEPTION')
-        logging.error(str(e))
-        traceback.print_exc(file=sys.stderr)
-        sys.exit(-1)
+if __name__ == "__main__":
+    main()

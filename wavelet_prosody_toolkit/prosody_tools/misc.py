@@ -105,7 +105,6 @@ def resample(waveform, s_sr, t_sr):
 
 def play(utt):
     wavfile = utt + ".wav"
-    wavfile = wavfile.replace(" ", "\ ")
     st = 0.2
     end = 1
 
@@ -116,7 +115,7 @@ def play(utt):
             end = 1.0
         except:
             continue
-        os.system("play %s trim 0:0:%f 0:0:%f " % (wavfile, st, end))
+        os.system("play '%s' trim 0:0:%f 0:0:%f " % (wavfile, st, end))
 
 
 def match_length(sig_list):
